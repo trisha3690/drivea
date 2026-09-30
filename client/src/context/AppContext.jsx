@@ -76,7 +76,7 @@ export const AppProvider = ({children}) => {
         }
     }
 
-    const fetchDriveContent = useCallback(()=>{
+    const fetchDriveContent = useCallback(
         async (folderId = currentFolderId, search = searchQuery, sort = sortBy)=>{
             if(!user) return;
             setIsDriveLoading(true)
@@ -89,7 +89,7 @@ export const AppProvider = ({children}) => {
                     folderId ? api.get(`/api/folders/${folderId}`) : null,
                 ])
 
-                setFolders(folders.data.folders);
+                setFolders(folderRes.data.folders);
                 setFiles(fileRes.data.files);
                 setBreadcrumbs(detailRes?.data?.breadcrumbs || ROOT_BREADCRUMB)
             } catch {
@@ -97,8 +97,9 @@ export const AppProvider = ({children}) => {
             } finally {
                 setIsDriveLoading(false)
             }
-        }
-    },[user, currentFolderId, searchQuery, sortBy])
+        },
+        [user, currentFolderId, searchQuery, sortBy]
+    )
 
     const value = {
         user, setUser, login, register, logout,
