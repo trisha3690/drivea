@@ -31,7 +31,7 @@ const FileGrid = ({onFolderClick, onPreviewFile, onShareItem, onRenameItem, onMo
         {/* Folders Section */}
         {hasFolders && (
             <div>
-                <h3 className="text-xs font-semibold text-salte-400 uppercase 
+                <h3 className="text-xs font-semibold text-slate-400 uppercase 
                 tracking-wider mb-3">Folders</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3
                 lg:grid-cols-4 gap-4">
