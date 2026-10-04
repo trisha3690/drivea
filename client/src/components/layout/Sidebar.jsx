@@ -20,7 +20,7 @@ const Sidebar = ({onCreateFolderClick, isMobileOpen, setIsMobileOpen}) => {
 
     const handleFileSelect = (e)=> {
         if(e.target.files && e.target.files.length > 0){
-            uploadFiles(e.targer.files, currentFolderId);
+            uploadFiles(e.target.files, currentFolderId);
             e.target.value="";
         }
     }

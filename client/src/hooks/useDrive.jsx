@@ -44,7 +44,7 @@ export function useDrive(){
             clearInterval(interval);
             setUploadProgress(100);
             await new Promise((r)=>setTimeout(r, 300))
-            toast.success(`${data.files.length} files(s) uploaded successfully1`);
+            toast.success(`${data.files.length} files(s) uploaded successfully`);
             await fetchDriveContent(folder_id);
             await refreshUser();
         } catch (err) {
