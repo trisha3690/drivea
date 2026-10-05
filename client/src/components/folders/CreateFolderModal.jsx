@@ -13,14 +13,11 @@ const CreateFolderModal = ({isOpen, onClose}) => {
         e.preventDefault();
         if (!name.trim()) return;
         setIsLoading(true);
-        try {
-            const created = await createFolder(name.trim());
-            if (created) {
-                setName("");
-                onClose();
-            }
-        } finally {
-            setIsLoading(false);
+        const created = await createFolder(name.trim())
+        setIsLoading(false)
+        if (created){
+            setName("")
+            onClose()
         }
     }
 
