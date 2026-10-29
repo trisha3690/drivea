@@ -44,7 +44,7 @@ export const uploadFiles = async (req, res) => {
 
         // Stream buffers to storage and record in database in parallel
         const createdFiles = await Promise.all(
-            req.files.map(async ()=>{
+            req.files.map(async (multerFile)=>{
                 const fileExt = path.extname(multerFile.originalname);
                 const randomString = crypto.randomBytes(8).toString("hex");
                 const s3Key = `users/${req.user.id}/${Date.now()}_${randomString}${fileExt}`
@@ -71,7 +71,7 @@ export const getFiles = async (req, res) => {
     try {
         const {folder, folder_id, search, sort = "name_asc", page = 1, limit = 50} = req.query;
         const pageNum = Math.max(1, parseInt(page, 10) || 1);
-        const limitNum = Math.max(1, parseInt(limit, 10) || 50);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
         const offset = (pageNum - 1) * limitNum;
         const orderBy = SORT_MAP[sort] || SORT_MAP.name_asc;
 

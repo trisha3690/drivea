@@ -36,7 +36,9 @@ export const createShareLink = async (req, res) => {
             // Check for an existing share link for this resource
             const [existing] = await sql`
             SELECT * FROM share_links
-            WHERE resource_id = ${resource.id} AND owner_id = ${req.user.id}`;
+            WHERE resource_type = ${resourceType}
+                AND resource_id = ${resource.id}
+                AND owner_id = ${req.user.id}`;
 
             // If expired, remove it
             if(existing && existing.expires_at && new Date() > new Date(existing.expires_at)){
@@ -47,7 +49,7 @@ export const createShareLink = async (req, res) => {
 
             const token = crypto.randomBytes(16).toString("hex");
             const [shareLink] = await sql`
-            INSERT INTO share_liks (token, resource_type, resource_id, owner_id, permission, expires_at)
+            INSERT INTO share_links (token, resource_type, resource_id, owner_id, permission, expires_at)
             VALUES (${token}, ${resourceType}, ${resource.id}, ${req.user.id}, ${permission}, ${targetExpiresAt ? new Date(targetExpiresAt) : null})
             RETURNING *
             `;
@@ -67,12 +69,12 @@ export const getUserShareLinks = async (req, res) => {
         const activeShareLinks = await sql`
         SELECT sl.*,
             CASE
-                WHEN sl.resource_type = "file" THEN json_build_object('id', f.id. 'name', f.name,
+                WHEN sl.resource_type = 'file' THEN json_build_object('id', f.id, 'name', f.name,
                 'mime_type', f.mime_type, 'size', f.size)
                 WHEN sl.resource_type = 'folder' THEN json_build_object('id', fo.id, 'name', fo.name)
             END AS resource
         FROM share_links sl
-        LEFT JOIN files f ON sl.resource_typr = 'file' AND f.id = sl.resource_id AND f.is_trashed = false
+        LEFT JOIN files f ON sl.resource_type = 'file' AND f.id = sl.resource_id AND f.is_trashed = false
         LEFT JOIN folders pf ON f.folder_id = pf.id
         LEFT JOIN folders fo ON sl.resource_type = 'folder' AND fo.id = sl.resource_id
         AND fo.is_trashed = false

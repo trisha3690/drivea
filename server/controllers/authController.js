@@ -38,7 +38,7 @@ export const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10)
     const hashedPassword = await bcrypt.hash(password, salt)
 
-    const storageLimit = Number(ProcesS.env.MAX_STORAGE_PER_USER || 1073741824);
+    const storageLimit = Number(process.env.MAX_STORAGE_PER_USER || 1073741824);
  
     const [user] = await sql`INSERT INTO users (name, email, password, storage_limit)
     VALUES (${name.trim()}, ${normalizedEmail}, ${hashedPassword}, ${storageLimit})
