@@ -12,6 +12,6 @@ shareRouter.use(protect)
 
 shareRouter.post("/", createShareLink)
 shareRouter.get("/", getUserShareLinks)
-shareRouter.post("/:id", deleteShareLink)
+shareRouter.delete("/:id", deleteShareLink)
 
 export default shareRouter

@@ -61,7 +61,7 @@ const Login = ({mode = 'login'}) => {
                     <Input
                     label="Full Name" 
                     icon={UserIcon}
-                    placeholder="Tanisha Chakraborty"
+                    placeholder="Enter Name"
                     value={form.name}
                     onChange={(e)=> updateField("name", e.target.value)}
                     required
@@ -72,7 +72,7 @@ const Login = ({mode = 'login'}) => {
                     label="Email Address" 
                     type="email"
                     icon={MailIcon}
-                    placeholder="you@example.com"
+                    placeholder="Enter Email"
                     value={form.email}
                     onChange={(e)=> updateField("email", e.target.value)}
                     required
