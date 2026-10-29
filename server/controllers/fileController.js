@@ -1,6 +1,6 @@
 import { sql } from "../config/db.js";
 import path from 'path'
-import crypto from `crypto`
+import crypto from "crypto";
 import { getSignedFileUrl, uploadToStorage } from "../utils/s3Helper.js";
 import { adjustUserStorage, cleanupShareLinks, permanentDeleteFileRecord } from "../services/storageService.js"
 
