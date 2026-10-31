@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_BASE_URL || "https://drivea-backend-v60l.onrender.com",
+    baseURL: import.meta.env.VITE_BASE_URL || "https://drivea-bjn0.onrender.com",
     withCredentials: true,
 });
 
