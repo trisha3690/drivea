@@ -82,7 +82,7 @@ export const permanentDeleteFolderHierarchy = async (folderId, ownerId) => {
 
    const files = await sql`
    SELECT id, s3_key, size FROM files
-   WHERE folder_id = ANY(${allFolderIds}::uuid[]) AND owner_id = 4{ownerId}`;
+   WHERE folder_id = ANY(${allFolderIds}::uuid[]) AND owner_id = ${ownerId}`;
 
    const s3Keys = files.map((f)=>f.s3_key);
    const fileIds = files.map((f)=>f.id);
