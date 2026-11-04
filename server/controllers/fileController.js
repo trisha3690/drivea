@@ -2,7 +2,9 @@ import { sql } from "../config/db.js";
 import path from 'path'
 import crypto from "crypto";
 import { getSignedFileUrl, uploadToStorage } from "../utils/s3Helper.js";
-import { adjustUserStorage, cleanupShareLinks, permanentDeleteFileRecord } from "../services/storageService.js"
+import { adjustUserStorage, cleanupShareLinks, permanentDeleteFileRecord } from "../services/storageService.js";
+import { BUCKET_NAME, client } from "../config/s3.js";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 
 const SORT_MAP = {
     name_asc: "name ASC",
@@ -126,13 +128,91 @@ export const getFilePreviewUrl = async (req, res) => {
         if(!file){
             return res.status(404).json({ error: "File not found." });
         }
-        const downloadUrl = await getSignedFileUrl(file.s3_key)
-        return res.status(200).json({ url: downloadUrl, preview_url: downloadUrl, file});
+        let downloadUrl = "";
+        try {
+            downloadUrl = await getSignedFileUrl(file.s3_key);
+        } catch (s3Err) {
+            console.error("Presigned URL error:", s3Err.message);
+        }
+        const viewUrl = `/api/files/${file.id}/view`;
+        const directDownloadUrl = `/api/files/${file.id}/download`;
+
+        return res.status(200).json({ 
+            url: downloadUrl || viewUrl, 
+            preview_url: downloadUrl || viewUrl,
+            download_url: directDownloadUrl,
+            view_url: viewUrl,
+            file
+        });
 
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
 }
+
+// Download a file directly via server stream
+// GET /api/files/:id/download
+export const downloadFile = async (req, res) => {
+    try {
+        const [file] = await sql`
+        SELECT * FROM files WHERE id = ${req.params.id} AND owner_id = ${req.user.id}
+        `;
+
+        if (!file) {
+            return res.status(404).json({ error: "File not found." });
+        }
+
+        const command = new GetObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: file.s3_key,
+        });
+
+        const s3Response = await client.send(command);
+
+        res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(file.name)}"`);
+        res.setHeader("Content-Type", file.mime_type || "application/octet-stream");
+        if (file.size) {
+            res.setHeader("Content-Length", file.size);
+        }
+
+        return s3Response.Body.pipe(res);
+    } catch (error) {
+        console.error("[Download Error]:", error);
+        return res.status(500).json({ error: error.message || "Failed to download file." });
+    }
+};
+
+// Stream file inline for in-browser preview
+// GET /api/files/:id/view
+export const viewFile = async (req, res) => {
+    try {
+        const [file] = await sql`
+        SELECT * FROM files WHERE id = ${req.params.id} AND owner_id = ${req.user.id}
+        `;
+
+        if (!file) {
+            return res.status(404).json({ error: "File not found." });
+        }
+
+        const command = new GetObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: file.s3_key,
+        });
+
+        const s3Response = await client.send(command);
+
+        res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(file.name)}"`);
+        res.setHeader("Content-Type", file.mime_type || "application/octet-stream");
+        if (file.size) {
+            res.setHeader("Content-Length", file.size);
+        }
+
+        return s3Response.Body.pipe(res);
+    } catch (error) {
+        console.error("[View Error]:", error);
+        return res.status(500).json({ error: error.message || "Failed to view file." });
+    }
+};
 
 // Rename file
 // PATCH /api/files/:id/rename

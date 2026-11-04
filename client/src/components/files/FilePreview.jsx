@@ -37,6 +37,7 @@ const detectFileType = (file) => {
 
 const FilePreview = ({ file, onClose }) => {
     const [previewUrl, setPreviewUrl] = useState(file?.url || file?.preview_url || null);
+    const [downloadUrl, setDownloadUrl] = useState(null);
     const [isLoading, setIsLoading] = useState(!file?.url && !file?.preview_url);
     const [error, setError] = useState(null);
     const [mediaError, setMediaError] = useState(false);
@@ -64,9 +65,14 @@ const FilePreview = ({ file, onClose }) => {
 
         try {
             const { data } = await api.get(`/api/files/${file.id}/preview`);
-            const url = data?.url || data?.preview_url || data?.file?.url || null;
+            const serverBase = api.defaults.baseURL || "";
+            const directDownload = data?.download_url ? `${serverBase}${data.download_url}` : null;
+            const directView = data?.view_url ? `${serverBase}${data.view_url}` : null;
+
+            const url = data?.url || data?.preview_url || directView || directDownload || data?.file?.url || null;
             if (url) {
                 setPreviewUrl(url);
+                setDownloadUrl(directDownload || url);
             } else {
                 setError("Preview URL not found in server response.");
             }
@@ -162,7 +168,7 @@ const FilePreview = ({ file, onClose }) => {
                                 </a>
 
                                 <a 
-                                  href={previewUrl}
+                                  href={downloadUrl || previewUrl}
                                   download={file.name}
                                   target="_blank"
                                   rel="noreferrer"
@@ -227,7 +233,7 @@ const FilePreview = ({ file, onClose }) => {
                                         <span>Open in tab</span>
                                     </a>
                                     <a 
-                                      href={previewUrl} 
+                                      href={downloadUrl || previewUrl} 
                                       download={file.name} 
                                       target="_blank" 
                                       rel="noreferrer"
@@ -305,7 +311,7 @@ const FilePreview = ({ file, onClose }) => {
                                 <p className="text-sm text-slate-700 font-medium">Text preview unavailable</p>
                                 {previewUrl && (
                                     <a 
-                                      href={previewUrl} 
+                                      href={downloadUrl || previewUrl} 
                                       download={file.name}
                                       target="_blank" 
                                       rel="noreferrer" 
@@ -325,7 +331,7 @@ const FilePreview = ({ file, onClose }) => {
                             {previewUrl && (
                                 <div className="pt-2 flex items-center justify-center gap-2">
                                     <a 
-                                      href={previewUrl} 
+                                      href={downloadUrl || previewUrl} 
                                       download={file.name} 
                                       target="_blank" 
                                       rel="noreferrer"
