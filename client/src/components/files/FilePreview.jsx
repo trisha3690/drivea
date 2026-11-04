@@ -6,7 +6,6 @@ import {
   CheckIcon, 
   CopyIcon, 
   DownloadIcon, 
-  ExternalLinkIcon, 
   FileTextIcon, 
   Loader2Icon, 
   RefreshCwIcon, 
@@ -189,16 +188,6 @@ const FilePreview = ({ file, onClose }) => {
         }
     };
 
-    // Open file in new tab
-    const handleOpenInNewTab = () => {
-        if (blobUrl && blobUrl.startsWith("blob:")) {
-            window.open(blobUrl, "_blank");
-        } else {
-            const openUrl = directViewUrl || getAuthenticatedUrls(file.id).view;
-            window.open(openUrl, "_blank");
-        }
-    };
-
     const handleCopyText = () => {
         if (!textContent) return;
         navigator.clipboard.writeText(textContent);
@@ -235,17 +224,6 @@ const FilePreview = ({ file, onClose }) => {
                     </div>
 
                     <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                        {/* Open in Tab Button */}
-                        <button
-                          type="button"
-                          onClick={handleOpenInNewTab}
-                          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition"
-                          title="Open in new tab"
-                        >
-                            <ExternalLinkIcon className="size-3.5" />
-                            <span className="hidden sm:inline">Open</span>
-                        </button>
-
                         {/* Download to Device Button */}
                         <button
                           type="button"
@@ -305,17 +283,9 @@ const FilePreview = ({ file, onClose }) => {
                             <FileTextIcon className="size-10 text-slate-400 mx-auto" />
                             <h4 className="text-sm font-semibold text-slate-900">Preview rendering issue</h4>
                             <p className="text-xs text-slate-500">
-                                This file cannot be displayed directly inside the page, but you can download or open it.
+                                This file cannot be displayed directly inside the page, but you can download it to your local device.
                             </p>
                             <div className="pt-2 flex items-center justify-center gap-2">
-                                <button 
-                                  type="button"
-                                  onClick={handleOpenInNewTab} 
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition"
-                                >
-                                    <ExternalLinkIcon className="size-3.5" />
-                                    <span>Open in tab</span>
-                                </button>
                                 <button 
                                   type="button"
                                   onClick={handleDownload} 
@@ -439,14 +409,14 @@ const FilePreview = ({ file, onClose }) => {
                                 </p>
                             </div>
                             <p className="text-xs text-slate-500 bg-slate-50 py-2 px-3 rounded-lg border border-slate-100">
-                                This file can be downloaded to your local device or opened in a new tab.
+                                This file can be downloaded directly to your local device.
                             </p>
-                            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2.5">
+                            <div className="pt-2 flex items-center justify-center">
                                 <button 
                                   type="button"
                                   onClick={handleDownload} 
                                   disabled={isDownloading}
-                                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white text-xs font-semibold rounded-xl transition shadow-xs"
+                                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white text-xs font-semibold rounded-xl transition shadow-xs"
                                 >
                                     {isDownloading ? (
                                         <Loader2Icon className="size-4 animate-spin" />
@@ -454,14 +424,6 @@ const FilePreview = ({ file, onClose }) => {
                                         <DownloadIcon className="size-4" />
                                     )}
                                     <span>{isDownloading ? "Downloading..." : "Download to Device"}</span>
-                                </button>
-                                <button 
-                                  type="button"
-                                  onClick={handleOpenInNewTab} 
-                                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition"
-                                >
-                                    <ExternalLinkIcon className="size-4" />
-                                    <span>Open in Tab</span>
                                 </button>
                             </div>
                         </div>
