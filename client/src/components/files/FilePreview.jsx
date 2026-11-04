@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import api from '../../config/api';
 import { toast } from 'react-hot-toast';
 import { 
@@ -27,7 +27,11 @@ const detectFileType = (file) => {
     "txt", "md", "markdown", "json", "js", "jsx", "ts", "tsx", "html", "css", 
     "py", "csv", "xml", "log", "env", "yml", "yaml", "sh", "sql", "c", "cpp", "java"
   ];
+  const docxExts = ["docx", "doc"];
 
+  if (docxExts.includes(ext) || mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || mime === "application/msword") {
+    return "docx";
+  }
   if (mime.startsWith("image/") || imageExts.includes(ext)) return "image";
   if (mime.startsWith("video/") || videoExts.includes(ext)) return "video";
   if (mime.startsWith("audio/") || audioExts.includes(ext)) return "audio";
@@ -45,7 +49,9 @@ const FilePreview = ({ file, onClose }) => {
     const [error, setError] = useState(null);
     const [mediaError, setMediaError] = useState(false);
     const [textContent, setTextContent] = useState(null);
+    const [docxHtml, setDocxHtml] = useState(null);
     const [isCopied, setIsCopied] = useState(false);
+    const docxContainerRef = useRef(null);
 
     const fileType = detectFileType(file);
 
@@ -71,31 +77,60 @@ const FilePreview = ({ file, onClose }) => {
         setIsLoading(true);
         setError(null);
         setMediaError(false);
+        setDocxHtml(null);
+        setTextContent(null);
 
         const urls = getAuthenticatedUrls(file.id);
         setDirectViewUrl(urls.view);
         setDirectDownloadUrl(urls.download);
 
         try {
-            if (fileType === "text") {
-                // Fetch text content directly
+            if (fileType === "docx") {
+                // Fetch docx binary blob and convert directly to readable HTML
+                const res = await api.get(`/api/files/${file.id}/view`, { responseType: "blob" });
+                const mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                const blob = new Blob([res.data], { type: mime });
+                const objectUrl = URL.createObjectURL(blob);
+                setBlobUrl(objectUrl);
+
+                try {
+                    const mammoth = await import("mammoth");
+                    const arrayBuffer = await res.data.arrayBuffer();
+                    const result = await mammoth.convertToHtml({ arrayBuffer });
+                    setDocxHtml(result.value || "<p><em>This document has no readable text.</em></p>");
+                } catch (docxErr) {
+                    console.warn("Mammoth failed, falling back to docx-preview:", docxErr);
+                    try {
+                        const { renderAsync } = await import("docx-preview");
+                        if (docxContainerRef.current) {
+                            docxContainerRef.current.innerHTML = "";
+                            await renderAsync(res.data, docxContainerRef.current, null, {
+                                className: "docx-preview-content",
+                                inWrapper: false,
+                                ignoreWidth: true,
+                                ignoreHeight: true,
+                            });
+                        }
+                    } catch (renderErr) {
+                        console.error("Both docx preview methods failed:", renderErr);
+                        setMediaError(true);
+                    }
+                }
+            } else if (fileType === "text") {
                 const res = await api.get(`/api/files/${file.id}/view`, { responseType: "text" });
                 const text = typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2);
                 setTextContent(text.slice(0, 200000));
             } else if (fileType === "image" || fileType === "pdf") {
-                // Fetch blob for seamless rendering without cross-origin cookie / referrer issues
                 const res = await api.get(`/api/files/${file.id}/view`, { responseType: "blob" });
                 const mime = file.mime_type || (fileType === "pdf" ? "application/pdf" : "image/jpeg");
                 const blob = new Blob([res.data], { type: mime });
                 const objectUrl = URL.createObjectURL(blob);
                 setBlobUrl(objectUrl);
             } else if (fileType === "video" || fileType === "audio") {
-                // For media, use authenticated streaming URL directly (supports byte range seeking)
                 setBlobUrl(urls.view);
             }
         } catch (err) {
             console.error("Preview load error:", err);
-            // If blob fetch fails, fallback to directViewUrl
             setBlobUrl(urls.view);
         } finally {
             setIsLoading(false);
@@ -147,7 +182,6 @@ const FilePreview = ({ file, onClose }) => {
             toast.success("Download started");
         } catch (err) {
             console.error("Download failed:", err);
-            // Fallback: open direct authenticated download URL
             const fallbackUrl = directDownloadUrl || getAuthenticatedUrls(file.id).download;
             window.open(fallbackUrl, "_blank");
         } finally {
@@ -293,6 +327,35 @@ const FilePreview = ({ file, onClose }) => {
                                 </button>
                             </div>
                         </div>
+                    ) : fileType === "docx" ? (
+                        /* Direct Word Document Inline Preview */
+                        docxHtml ? (
+                            <div className="w-full flex flex-col h-[75vh] bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm animate-fade-in">
+                                <div className="flex items-center justify-between px-4 py-2.5 bg-slate-100 border-b border-slate-200 text-xs text-slate-600">
+                                    <span className="font-medium truncate flex items-center gap-2">
+                                        <FileTextIcon className="size-4 text-orange-600" />
+                                        Document Preview • {file.name}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={handleDownload}
+                                      disabled={isDownloading}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition shadow-xs"
+                                    >
+                                        <DownloadIcon className="size-3.5" />
+                                        <span>{isDownloading ? "Downloading..." : "Download to Device"}</span>
+                                    </button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100/70">
+                                    <div 
+                                      className="max-w-3xl mx-auto bg-white p-6 sm:p-12 rounded-xl shadow-xs border border-slate-200 document-preview-body"
+                                      dangerouslySetInnerHTML={{ __html: docxHtml }}
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <div ref={docxContainerRef} className="w-full max-h-[75vh] overflow-y-auto bg-white rounded-xl p-6 border border-slate-200" />
+                        )
                     ) : fileType === "image" && (blobUrl || directViewUrl) ? (
                         <div className="flex items-center justify-center w-full h-full">
                             <img 
@@ -364,7 +427,7 @@ const FilePreview = ({ file, onClose }) => {
                             </div>
                         )
                     ) : (
-                        /* Document / other file preview card */
+                        /* Unsupported binary files (archives, executables, etc.) */
                         <div className="text-center p-6 sm:p-10 bg-white border border-slate-200 rounded-2xl w-full max-w-md space-y-4 shadow-sm animate-fade-in">
                             <div className="p-4 rounded-2xl bg-orange-50 border border-orange-100 w-fit mx-auto text-orange-600">
                                 {getFileIcon(file.mime_type, "size-12")}
@@ -372,7 +435,7 @@ const FilePreview = ({ file, onClose }) => {
                             <div>
                                 <h4 className="text-base font-semibold text-slate-900 break-words">{file.name}</h4>
                                 <p className="text-xs text-slate-500 mt-1">
-                                    {formatBytes(file.size)} • Document
+                                    {formatBytes(file.size)} • File
                                 </p>
                             </div>
                             <p className="text-xs text-slate-500 bg-slate-50 py-2 px-3 rounded-lg border border-slate-100">
