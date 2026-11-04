@@ -25,16 +25,15 @@ const FileGrid = ({onFolderClick, onPreviewFile, onShareItem, onRenameItem, onMo
         return <EmptyState />
     }
 
-
   return (
     <div className="space-y-6">
         {/* Folders Section */}
         {hasFolders && (
             <div>
                 <h3 className="text-xs font-semibold text-slate-400 uppercase 
-                tracking-wider mb-3">Folders</h3>
+                tracking-wider mb-2.5 sm:mb-3">Folders</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3
-                lg:grid-cols-4 gap-4">
+                lg:grid-cols-4 gap-3 sm:gap-4">
                   {folders.map((folder)=> (
                      <FolderCard 
                      key={folder.id}
@@ -51,18 +50,18 @@ const FileGrid = ({onFolderClick, onPreviewFile, onShareItem, onRenameItem, onMo
         {/* Files Section */}
         {hasFiles && (
             <div>
-                <h3 className="text-xs font-semibold text-salte-400 uppercase 
-                tracking-wider mb-3">Files</h3>
+                <h3 className="text-xs font-semibold text-slate-400 uppercase 
+                tracking-wider mb-2.5 sm:mb-3">Files</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3
-                lg:grid-cols-4 gap-4">
+                lg:grid-cols-4 gap-3 sm:gap-4">
                     {files.map((file)=>(
                        <FileCard key={file.id}
                        file={file}
                        onPreview={onPreviewFile}
-                        onShare={(item)=> onShareItem({...item, item_type: "file"})}
-                     onRename={(item)=> onRenameItem({...item, item_type: "file"})}
-                     onMove={(item)=> onMoveItem({...item, item_type: "file"})}
-                     onDelete={(item)=> onDeleteItem({...item, item_type: "file"})}/>
+                       onShare={(item)=> onShareItem({...item, item_type: "file"})}
+                       onRename={(item)=> onRenameItem({...item, item_type: "file"})}
+                       onMove={(item)=> onMoveItem({...item, item_type: "file"})}
+                       onDelete={(item)=> onDeleteItem({...item, item_type: "file"})}/>
                     ))}
                 </div>
             </div>

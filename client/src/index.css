@@ -28,6 +28,15 @@
     box-shadow: none !important;
     font-family: 'Urbanist', sans-serif;
   }
+
+  /* Utility for hiding scrollbar while allowing scrolling */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 @keyframes fadeIn {

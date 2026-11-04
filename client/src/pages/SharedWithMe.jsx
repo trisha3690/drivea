@@ -26,10 +26,10 @@ const SharedWithMe = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
       {/* Minimal Header */}
-      <header className='h-16 border-b border-slate-200 bg-white px-6 flex items-center justify-between'>
-        <Link to="/" className='flex items-center gap-3'>
-           <img src="/logo.svg" alt="logo" className="size-7"/>
-           <span className='text-2xl font-medium text-slate-900'>Drivea</span>
+      <header className='h-16 border-b border-slate-200 bg-white px-4 sm:px-6 flex items-center justify-between'>
+        <Link to="/" className='flex items-center gap-2.5 sm:gap-3'>
+           <img src="/logo.svg" alt="logo" className="size-6 sm:size-7"/>
+           <span className='text-xl sm:text-2xl font-medium text-slate-900'>Drivea</span>
         </Link>
         <Link to="/login" className="text-xs font-semibold text-orange-600 hover:underline">
            Sign In
@@ -37,44 +37,44 @@ const SharedWithMe = () => {
       </header>
 
       {/* Content Container */}
-      <main className="flex-1 flex items-center justify-center p-6">
+      <main className="flex-1 flex items-center justify-center p-3.5 sm:p-6">
         {isLoading ? (
-          <div className="text-center space-y-3">
+          <div className="text-center space-y-3 py-12">
             <Spinner size='lg' className="text-orange-600"/>
             <p className="text-sm text-slate-500 font-medium">Loading shared item...</p>
           </div>
         ) : error ? (
-          <div className='max-w-md w-full p-8 bg-white border border-slate-200
-          rounded-2xl text-center space-y-4'>
+          <div className='max-w-md w-full p-6 sm:p-8 bg-white border border-slate-200
+          rounded-2xl text-center space-y-4 shadow-sm'>
             <div className="size-12 rounded-full bg-red-50 text-red-600 flex items-center
             justify-center mx-auto border border-red-200">
               <LockIcon className="size-6"/>
-              <h3>Link Unavailable</h3>
-              <p>{error}</p>
-              <div className='pt-2'>
-                <Link to="/">
+            </div>
+            <h3 className="text-base font-semibold text-slate-900">Link Unavailable</h3>
+            <p className="text-sm text-slate-500">{error}</p>
+            <div className='pt-2'>
+              <Link to="/">
                 <Button variant='secondary' size='sm'>Go to Homepage</Button>
-                </Link>
-              </div>
+              </Link>
             </div>
           </div>
         ) : data?.resource_type === "file" ? (
-          <div className="max-w-xl w-full p-8 bg-white border border-slate-200
-          rounded-3xl text-center space-y-6 animate-fade-in">
-            <div className='w-20 h-20 rounded-3xl bg-slate-100 border border-slate-200
+          <div className="max-w-xl w-full p-5 sm:p-8 bg-white border border-slate-200
+          rounded-3xl text-center space-y-5 sm:space-y-6 animate-fade-in shadow-sm">
+            <div className='w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-slate-100 border border-slate-200
             flex items-center justify-center mx-auto'>
-              {getFileIcon(data.file.mime_type, "size-10")}
+              {getFileIcon(data.file.mime_type, "size-8 sm:size-10")}
             </div>
 
             <div>
-              <h2 className="text-xl font-medium text-slate-900 mb-1">{data.file.name}</h2>
+              <h2 className="text-lg sm:text-xl font-medium text-slate-900 mb-1 truncate px-2">{data.file.name}</h2>
               <p className="text-xs text-slate-500">
-                Size: {formatBytes(data.file.size)} . Shared by {data.owner?.name || "User"}
+                Size: {formatBytes(data.file.size)} • Shared by {data.owner?.name || "User"}
               </p>
             </div>
 
             {data.permission === "download" ? (
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs
+              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs
               text-slate-600 font-medium">
                 This link grants <span className="text-orange-600 font-semibold">download-only</span> permission.
               </div>
@@ -84,7 +84,7 @@ const SharedWithMe = () => {
               <a href={data.url} download={data.file.name} target="_blank"
               rel="noreferrer" className="inline-flex items-center justify-center gap-2 
               w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold
-              text-sm rounded-lg transition">
+              text-sm rounded-xl transition shadow-xs">
                 <DownloadIcon className="size-4"/>
                 <span>Download File</span>
               </a>
@@ -92,21 +92,20 @@ const SharedWithMe = () => {
           </div>
         ) : (
           // Folder View
-          <div className="max-w-2xl w-full p-8 bg-white border border-slate-200
-          rounded-3xl space-y-6">
+          <div className="max-w-2xl w-full p-5 sm:p-8 bg-white border border-slate-200
+          rounded-3xl space-y-5 sm:space-y-6 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-orange-50 text-orange-600 border
-              border-oranfe-100">
-                <LucideFolder className="size-6 fill-orange-500/20"/>
+              <div className="p-2 sm:p-2.5 rounded-xl bg-orange-50 text-orange-600 border border-orange-100 shrink-0">
+                <LucideFolder className="size-5 sm:size-6 fill-orange-500/20"/>
               </div>
-              <div>
-                <h2>{data.folder.name}</h2>
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg font-semibold text-slate-900 truncate">{data.folder.name}</h2>
                 <p className="text-xs text-slate-500">Shared Folder by {data.owner?.name || "User"}</p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Contents</h2>
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Contents</h3>
 
               {!data.files || data.files.length === 0 ? (
                 <div className="p-8 text-center bg-slate-50 border border-slate-200
@@ -117,21 +116,21 @@ const SharedWithMe = () => {
                 <div className="divide-y divide-slate-200 bg-slate-50/50 border
                 border-slate-200 rounded-xl overflow-hidden">
                   {data.files.map((f)=>(
-                    <div key={f.id} className='p-3.5 flex items-center justify-between 
+                    <div key={f.id} className='p-3 sm:p-3.5 flex items-center justify-between gap-2
                     hover:bg-slate-100/80 transition'>
-                      <div className='flex items-center gap-3 min-w-0 pr-3'>
+                      <div className='flex items-center gap-2.5 sm:gap-3 min-w-0 pr-1 sm:pr-3'>
                         {getFileIcon(f.mime_type, "size-5 shrink-0")}
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-slate-800 truncate">{f.name}</p>
-                          <p className="text-xs text-slate-500">{formatBytes(f.size)}</p>
+                          <p className="text-xs sm:text-sm font-semibold text-slate-800 truncate">{f.name}</p>
+                          <p className="text-[10px] sm:text-xs text-slate-500">{formatBytes(f.size)}</p>
                         </div>
                       </div>
                       {f.url && (
                         <a href={f.url} download={f.name} target="_blank" rel="noreferrer"
-                        className='inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 
+                        className='inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-orange-600 hover:bg-orange-700 
                         text-white text-xs font-semibold rounded-lg transition shrink-0'>
                           <DownloadIcon className="size-3.5"/>
-                          <span>Download</span>
+                          <span className="hidden sm:inline">Download</span>
                         </a>
                       )}
                     </div>
