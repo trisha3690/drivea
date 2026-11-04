@@ -31,6 +31,9 @@ export const AppProvider = ({children}) => {
     const refreshUser = useCallback( async () =>{
       try{
         const {data} = await api.get("/api/auth/me");
+        if (data?.token) {
+            localStorage.setItem("token", data.token);
+        }
         setUser(data.user)
         return data.user;
       } catch (error) {
@@ -49,6 +52,9 @@ export const AppProvider = ({children}) => {
     const authAction = async (requestFn, successMsg, errorFallback)=>{
        try{
           const {data} = await requestFn();
+          if (data?.token) {
+              localStorage.setItem("token", data.token);
+          }
           setUser(data.user)
           if(successMsg) toast.success(successMsg)
             return true;
@@ -69,10 +75,12 @@ export const AppProvider = ({children}) => {
     const logout = async () => {
         try{
            await api.post("/api/auth/logout")
+        } catch (error) {
+           console.error("Logout error:", error);
+        } finally {
+           localStorage.removeItem("token");
            setUser(null)
            toast.success("Logged out")
-        } catch (error) {
-           toast.error("Logout error");
         }
     }
 

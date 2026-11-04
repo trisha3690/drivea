@@ -12,6 +12,30 @@ const SharedWithMe = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [data, setData] = useState(null)
+  const [downloadingId, setDownloadingId] = useState(null)
+
+  const handleDownload = async (fileId, fileName) => {
+    try {
+      setDownloadingId(fileId || "main")
+      const endpoint = fileId ? `/api/shares/download/${token}/${fileId}` : `/api/shares/download/${token}`;
+      const response = await api.get(endpoint, { responseType: "blob" });
+      const blob = new Blob([response.data]);
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+    } catch (err) {
+      console.error("Shared download error:", err);
+      const fallbackUrl = `${api.defaults.baseURL || ""}/api/shares/download/${token}${fileId ? `/${fileId}` : ""}`;
+      window.open(fallbackUrl, "_blank");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   useEffect(()=>{
     setIsLoading(true)
@@ -80,15 +104,16 @@ const SharedWithMe = () => {
               </div>
             ) : null}
 
-            {data.url && (
-              <a href={data.url} download={data.file.name} target="_blank"
-              rel="noreferrer" className="inline-flex items-center justify-center gap-2 
-              w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold
+            <button 
+              type="button"
+              onClick={() => handleDownload(null, data.file.name)} 
+              disabled={downloadingId === "main"}
+              className="inline-flex items-center justify-center gap-2 
+              w-full py-3 bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white font-semibold
               text-sm rounded-xl transition shadow-xs">
                 <DownloadIcon className="size-4"/>
-                <span>Download File</span>
-              </a>
-            )}
+                <span>{downloadingId === "main" ? "Downloading..." : "Download File"}</span>
+              </button>
           </div>
         ) : (
           // Folder View
@@ -125,14 +150,15 @@ const SharedWithMe = () => {
                           <p className="text-[10px] sm:text-xs text-slate-500">{formatBytes(f.size)}</p>
                         </div>
                       </div>
-                      {f.url && (
-                        <a href={f.url} download={f.name} target="_blank" rel="noreferrer"
+                      <button 
+                        type="button"
+                        onClick={() => handleDownload(f.id, f.name)} 
+                        disabled={downloadingId === f.id}
                         className='inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-orange-600 hover:bg-orange-700 
-                        text-white text-xs font-semibold rounded-lg transition shrink-0'>
+                        disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition shrink-0'>
                           <DownloadIcon className="size-3.5"/>
-                          <span className="hidden sm:inline">Download</span>
-                        </a>
-                      )}
+                          <span className="hidden sm:inline">{downloadingId === f.id ? "Downloading..." : "Download"}</span>
+                        </button>
                     </div>
                   ))}
                 </div>

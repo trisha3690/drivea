@@ -1,6 +1,8 @@
 import { sql } from "../config/db.js";
 import crypto from 'crypto';
 import { getSignedFileUrl } from "../utils/s3Helper.js";
+import { BUCKET_NAME, client } from "../config/s3.js";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 
 
 // Create or retrieve public share link for file or folder
@@ -129,11 +131,14 @@ export const accessShareLink = async (req, res) => {
                 }
             }
 
-            const downloadUrl = await getSignedFileUrl(file.s3_key)
+            const viewUrl = `/api/shares/view/${shareLink.token}`;
+            const downloadUrl = `/api/shares/download/${shareLink.token}`;
             return res.status(200).json({
                 resource_type: "file",
                 file,
-                url: downloadUrl,
+                url: viewUrl,
+                view_url: viewUrl,
+                download_url: downloadUrl,
                 permission: shareLink.permission,
                 owner,
             })
@@ -150,12 +155,12 @@ export const accessShareLink = async (req, res) => {
             sql`SELECT * FROM files WHERE folder_id = ${folder.id} AND is_trashed = false`,
         ]);
 
-        const filesWithUrls = await Promise.all(
-            files.map(async (f)=>({
-                ...f,
-                url: await getSignedFileUrl(f.s3_key)
-            }))
-        );
+        const filesWithUrls = files.map((f) => ({
+            ...f,
+            url: `/api/shares/view/${shareLink.token}/${f.id}`,
+            view_url: `/api/shares/view/${shareLink.token}/${f.id}`,
+            download_url: `/api/shares/download/${shareLink.token}/${f.id}`,
+        }));
 
         return res.status(200).json({
                 resource_type: "folder",
@@ -188,3 +193,118 @@ export const deleteShareLink = async (req, res) => {
         return res.status(500).json({ error: error.message });
     }
 }
+// Download file via public share link
+// GET /api/shares/download/:token or GET /api/shares/download/:token/:fileId
+export const downloadSharedFile = async (req, res) => {
+    try {
+        const { token, fileId } = req.params;
+        const [shareLink] = await sql`SELECT * FROM share_links WHERE token = ${token}`;
+        if (!shareLink) {
+            return res.status(404).json({ error: "Share link not found or has been revoked." });
+        }
+        if (shareLink.expires_at && new Date() > new Date(shareLink.expires_at)) {
+            return res.status(410).json({ error: "This share link has expired." });
+        }
+
+        let targetFileId = null;
+        if (shareLink.resource_type === "file") {
+            targetFileId = shareLink.resource_id;
+        } else if (shareLink.resource_type === "folder") {
+            if (!fileId) {
+                return res.status(400).json({ error: "File ID is required for folder downloads." });
+            }
+            targetFileId = fileId;
+        }
+
+        const [file] = await sql`SELECT * FROM files WHERE id = ${targetFileId} AND is_trashed = false`;
+        if (!file) {
+            return res.status(404).json({ error: "File not found or is unavailable." });
+        }
+
+        const command = new GetObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: file.s3_key,
+        });
+        const s3Response = await client.send(command);
+
+        res.setHeader("Content-Type", file.mime_type || "application/octet-stream");
+        res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(file.name)}"`);
+        if (file.size) {
+            res.setHeader("Content-Length", file.size);
+        }
+
+        if (typeof s3Response.Body.pipe === "function") {
+            return s3Response.Body.pipe(res);
+        } else if (typeof s3Response.Body.transformToByteArray === "function") {
+            const bytes = await s3Response.Body.transformToByteArray();
+            return res.end(Buffer.from(bytes));
+        } else {
+            const chunks = [];
+            for await (const chunk of s3Response.Body) {
+                chunks.push(chunk);
+            }
+            return res.end(Buffer.concat(chunks));
+        }
+    } catch (error) {
+        console.error("[Shared Download Error]:", error);
+        return res.status(500).json({ error: error.message || "Failed to download shared file." });
+    }
+};
+
+// View file inline via public share link
+// GET /api/shares/view/:token or GET /api/shares/view/:token/:fileId
+export const viewSharedFile = async (req, res) => {
+    try {
+        const { token, fileId } = req.params;
+        const [shareLink] = await sql`SELECT * FROM share_links WHERE token = ${token}`;
+        if (!shareLink) {
+            return res.status(404).json({ error: "Share link not found or has been revoked." });
+        }
+        if (shareLink.expires_at && new Date() > new Date(shareLink.expires_at)) {
+            return res.status(410).json({ error: "This share link has expired." });
+        }
+
+        let targetFileId = null;
+        if (shareLink.resource_type === "file") {
+            targetFileId = shareLink.resource_id;
+        } else if (shareLink.resource_type === "folder") {
+            if (!fileId) {
+                return res.status(400).json({ error: "File ID is required for folder views." });
+            }
+            targetFileId = fileId;
+        }
+
+        const [file] = await sql`SELECT * FROM files WHERE id = ${targetFileId} AND is_trashed = false`;
+        if (!file) {
+            return res.status(404).json({ error: "File not found or is unavailable." });
+        }
+
+        const command = new GetObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: file.s3_key,
+        });
+        const s3Response = await client.send(command);
+
+        res.setHeader("Content-Type", file.mime_type || "application/octet-stream");
+        res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(file.name)}"`);
+        if (file.size) {
+            res.setHeader("Content-Length", file.size);
+        }
+
+        if (typeof s3Response.Body.pipe === "function") {
+            return s3Response.Body.pipe(res);
+        } else if (typeof s3Response.Body.transformToByteArray === "function") {
+            const bytes = await s3Response.Body.transformToByteArray();
+            return res.end(Buffer.from(bytes));
+        } else {
+            const chunks = [];
+            for await (const chunk of s3Response.Body) {
+                chunks.push(chunk);
+            }
+            return res.end(Buffer.concat(chunks));
+        }
+    } catch (error) {
+        console.error("[Shared View Error]:", error);
+        return res.status(500).json({ error: error.message || "Failed to view shared file." });
+    }
+};

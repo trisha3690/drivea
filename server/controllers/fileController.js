@@ -128,18 +128,13 @@ export const getFilePreviewUrl = async (req, res) => {
         if(!file){
             return res.status(404).json({ error: "File not found." });
         }
-        let downloadUrl = "";
-        try {
-            downloadUrl = await getSignedFileUrl(file.s3_key);
-        } catch (s3Err) {
-            console.error("Presigned URL error:", s3Err.message);
-        }
+        // Direct backend streaming avoids unresolvable internal S3 hostnames (NXDOMAIN)
         const viewUrl = `/api/files/${file.id}/view`;
         const directDownloadUrl = `/api/files/${file.id}/download`;
 
         return res.status(200).json({ 
-            url: downloadUrl || viewUrl, 
-            preview_url: downloadUrl || viewUrl,
+            url: viewUrl, 
+            preview_url: viewUrl,
             download_url: directDownloadUrl,
             view_url: viewUrl,
             file
@@ -175,7 +170,18 @@ export const downloadFile = async (req, res) => {
             res.setHeader("Content-Length", file.size);
         }
 
-        return s3Response.Body.pipe(res);
+        if (typeof s3Response.Body.pipe === "function") {
+            return s3Response.Body.pipe(res);
+        } else if (typeof s3Response.Body.transformToByteArray === "function") {
+            const bytes = await s3Response.Body.transformToByteArray();
+            return res.end(Buffer.from(bytes));
+        } else {
+            const chunks = [];
+            for await (const chunk of s3Response.Body) {
+                chunks.push(chunk);
+            }
+            return res.end(Buffer.concat(chunks));
+        }
     } catch (error) {
         console.error("[Download Error]:", error);
         return res.status(500).json({ error: error.message || "Failed to download file." });
@@ -207,7 +213,18 @@ export const viewFile = async (req, res) => {
             res.setHeader("Content-Length", file.size);
         }
 
-        return s3Response.Body.pipe(res);
+        if (typeof s3Response.Body.pipe === "function") {
+            return s3Response.Body.pipe(res);
+        } else if (typeof s3Response.Body.transformToByteArray === "function") {
+            const bytes = await s3Response.Body.transformToByteArray();
+            return res.end(Buffer.from(bytes));
+        } else {
+            const chunks = [];
+            for await (const chunk of s3Response.Body) {
+                chunks.push(chunk);
+            }
+            return res.end(Buffer.concat(chunks));
+        }
     } catch (error) {
         console.error("[View Error]:", error);
         return res.status(500).json({ error: error.message || "Failed to view file." });

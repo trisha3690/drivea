@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken"
 import { sql } from "../config/db.js";
 // Mandatory authentication guard reading token directly from cookie
 export const protect = async (req, res, next) => {
-    const token = req.cookies?.token;
+    const token = req.cookies?.token || req.query?.token || req.headers?.authorization?.replace("Bearer ", "");
 
     if(!token) {
         return res.status(401).json({ error: "Unauthorized. Please log in."});

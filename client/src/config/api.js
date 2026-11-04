@@ -5,4 +5,13 @@ const api = axios.create({
     withCredentials: true,
 });
 
+// Attach Authorization Bearer token from localStorage for cross-origin resilience
+api.interceptors.request.use((config) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
 export default api;
