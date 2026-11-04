@@ -127,7 +127,7 @@ export const getFilePreviewUrl = async (req, res) => {
             return res.status(404).json({ error: "File not found." });
         }
         const downloadUrl = await getSignedFileUrl(file.s3_key)
-        return res.status(200).json({ url: downloadUrl, file});
+        return res.status(200).json({ url: downloadUrl, preview_url: downloadUrl, file});
 
     } catch (error) {
         return res.status(500).json({ error: error.message });
