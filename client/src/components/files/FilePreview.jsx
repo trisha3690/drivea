@@ -19,11 +19,8 @@ const FilePreview = ({ file, onClose}) => {
         .then(({data})=>{
             if(isMounted) setPreviewUrl(data.url);
         })
-        .catch((err)=>{
-            if(isMounted) {
-                const message = err.response?.data?.error;
-                setError(typeof message === "string" ? message : "Failed to load file preview.");
-            }
+        .catch(()=>{
+            if(isMounted) setError("Failed to load file preview");
         })
         .finally(()=>{
             if(isMounted) setIsLoading(false)
@@ -38,37 +35,38 @@ const FilePreview = ({ file, onClose}) => {
 
    const mime = file.mime_type || "";
    return (
-    <div onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40
+    <div onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40
     backdrop-blur-xs animate-fade-in">
 
         {/* Modal Box */}
         <div onClick={(e)=> e.stopPropagation()} className="w-full max-w-4xl bg-white border border-slate-200 rounded-2xl flex flex-col
-        max-h-[92vh] overflow-hidden animate-slide-up">
+        max-h-[92vh] overflow-hidden animate-slide-up shadow-xl">
             {/* Top Bar */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-                <div className="flex items-center gap-3 min-w-0 pr-4">
-                    <FileTextIcon className="size-5 text-orange-600 shrink-0"/>
-                    <div>
-                        <h3 cassName="text-base font-medium text-slate-900 truncate">{file.name}</h3>
-                        <p className="text-xs text-slate-500">{formatBytes(file.size)}</p>
+            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-200">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2 sm:pr-4">
+                    <FileTextIcon className="size-4 sm:size-5 text-orange-600 shrink-0"/>
+                    <div className="min-w-0">
+                        <h3 className="text-sm sm:text-base font-medium text-slate-900 truncate">{file.name}</h3>
+                        <p className="text-[11px] sm:text-xs text-slate-500">{formatBytes(file.size)}</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                     {previewUrl && (
                        <a 
                        href={previewUrl}
                        download={file.name}
                        target='_blank'
                        rel='noreferrer'
-                       className='inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-orange-600
-                       hover:bg-orange-700 text-white text-xs font-medium rounded-md transition'>
+                       className='inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-600
+                       hover:bg-orange-700 text-white text-xs font-medium rounded-lg transition'
+                       >
                           <DownloadIcon className="w-3.5 h-3.5" />
-                          <span>Download</span>
+                          <span className="hidden sm:inline">Download</span>
                        </a>
                     )}
                     <button onClick={onClose} className='p-1.5 rounded-lg text-slate-400 hover:text-slate-700
-                    hover:bg-slate-100 transition'>
+                    hover:bg-slate-100 transition' aria-label="Close preview">
                         <XIcon className="size-5"/>
                     </button>
                 </div>
@@ -76,9 +74,9 @@ const FilePreview = ({ file, onClose}) => {
             </div>
 
             {/* Preview Content Area */}
-            <div className="flex-1 p-6 overflow-auto flex items-center justify-center bg-slate-50 min-h-80">
+            <div className="flex-1 p-3 sm:p-6 overflow-auto flex items-center justify-center bg-slate-50 min-h-60 sm:min-h-80">
                 {isLoading ? (
-                    <div className="flex flex-col items-center gap-3 text-slate-500">
+                    <div className="flex flex-col items-center gap-3 text-slate-500 py-10">
                         <Loader2Icon className="size-8 animate-spin text-orange-600"/>
                         <p className="text-sm font-medium">Loading preview...</p>
                     </div>
@@ -87,23 +85,23 @@ const FilePreview = ({ file, onClose}) => {
                         <p>{error}</p>
                     </div>
                 ) : mime.startsWith("image/") ? (
-                    <img src={previewUrl} alt={file.name} className='max-h-[700vh] max-w-full
+                    <img src={previewUrl} alt={file.name} className='max-h-[70vh] max-w-full
                     object-contain rounded-xl border border-slate-200'/>
                 ) : mime.startsWith("video/") ? (
-                    <video src={previewUrl}  controls className="max-h-[70vh] max-w-full rounded-xl
+                    <video src={previewUrl} controls className="max-h-[70vh] max-w-full rounded-xl
                     border border-slate-200"/>
                 ) : mime.startsWith("audio/") ? (
-                    <div className="p-8 bg-white border border-slate-200 rounded-2xl flex flex-col
-                    items-center gap-4">
-                        <p className='text-sm text-slate-800 font-semibold'>{file.name}</p>
-                        <audio src={previewUrl} controls className="w-72 md:w-96"/>
+                    <div className="p-5 sm:p-8 bg-white border border-slate-200 rounded-2xl flex flex-col
+                    items-center gap-4 w-full max-w-sm sm:max-w-md">
+                        <p className='text-sm text-slate-800 font-semibold truncate max-w-full'>{file.name}</p>
+                        <audio src={previewUrl} controls className="w-full"/>
                     </div>
-                ) :  mime === "application/pdf" ? (
+                ) : mime === "application/pdf" ? (
                     <iframe src={previewUrl} title={file.name} className="w-full h-[70vh] rounded-xl
                     border border-slate-200"/>
                 ) : (
-                    <div className="text-center p-10 bg-white border border-slate-200 rounded-2xl min-w-sm">
-                        <FileTextIcon className="size-12 text-slate-400 mx-auto mb-3"/>
+                    <div className="text-center p-6 sm:p-10 bg-white border border-slate-200 rounded-2xl w-full max-w-sm">
+                        <FileTextIcon className="size-10 sm:size-12 text-slate-400 mx-auto mb-3"/>
                         <p className="text-sm text-slate-700 mb-1">No direct preview available</p>
                     </div>
                 )}

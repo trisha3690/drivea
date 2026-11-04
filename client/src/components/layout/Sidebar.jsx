@@ -1,7 +1,7 @@
 import React, { useRef } from 'react'
 import { useApp } from '../../context/AppContext'
 import { Link, useLocation } from 'react-router-dom'
-import { FolderPlusIcon, HardDriveIcon, HardDriveUploadIcon, PlusIcon, Trash2Icon, UserIcon } from 'lucide-react'
+import { FolderPlusIcon, HardDriveIcon, HardDriveUploadIcon, PlusIcon, Trash2Icon, UserIcon, XIcon } from 'lucide-react'
 import { Dropdown, DropdownItem } from '../ui/Dropdown'
 import { formatBytes } from '../../assets/assets'
 import {ProgressBar} from '../ui/ProgressBar'
@@ -22,6 +22,7 @@ const Sidebar = ({onCreateFolderClick, isMobileOpen, setIsMobileOpen}) => {
         if(e.target.files && e.target.files.length > 0){
             uploadFiles(e.target.files, currentFolderId);
             e.target.value="";
+            setIsMobileOpen?.(false);
         }
     }
 
@@ -33,22 +34,33 @@ const Sidebar = ({onCreateFolderClick, isMobileOpen, setIsMobileOpen}) => {
 
   return (
     <>
-        {/*Mobile overly backdrop */}
+        {/*Mobile overlay backdrop */}
         {isMobileOpen && (
-            <div className="fixed inset-0 z-40 bg-slate-900/30 backdrop-blur-xs md:hidden" 
+            <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs md:hidden transition-opacity" 
             onClick={()=> setIsMobileOpen(false)}/>
         )}
 
-        <aside className={`fixed top-0 left-0 bottom-0 z-40 w-64 bg-white border-r 
-        border-slate-200 flex flex-col transition-transform duration-300 md:translate-x-0 $
-        {isMobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <aside className={`fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[85vw] md:w-64 bg-white border-r 
+        border-slate-200 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 ${
+            isMobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+        }`}>
         {/*Brand Logo Header */}
-        <div className='flex items-center gap-3 px-6 py-5 border-b border-slate-200'>
-            <img src="/logo.svg" alt="Logo" className='size-11'/>
-            <div>
-                <h1 className="text-2xl font-medium uppercase text-slate-800">Drivea</h1>
-                <p className="text-xs text-slate-500 tracking-wider font-medium uppercase">Cloud Storage</p>
+        <div className='flex items-center justify-between px-5 py-4 md:px-6 md:py-5 border-b border-slate-200'>
+            <div className='flex items-center gap-3'>
+                <img src="/logo.svg" alt="Logo" className='size-9 md:size-11'/>
+                <div>
+                    <h1 className="text-xl md:text-2xl font-medium uppercase text-slate-800">Drivea</h1>
+                    <p className="text-[10px] md:text-xs text-slate-500 tracking-wider font-medium uppercase">Cloud Storage</p>
+                </div>
             </div>
+            <button
+                type="button"
+                onClick={() => setIsMobileOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 md:hidden transition"
+                aria-label="Close sidebar"
+            >
+                <XIcon className="size-5" />
+            </button>
         </div>
 
         {/* Upload CTA Dropdown */}
@@ -59,18 +71,24 @@ const Sidebar = ({onCreateFolderClick, isMobileOpen, setIsMobileOpen}) => {
             trigger={
                 <button type="button" disabled={isUploading} className="w-full flex
                 items-center justify-center gap-2 px-4 py-3 bg-orange-600
-                hover:bg-orange-700 text-white font-semibold text-sm rounded-lg
-                transition-all disabled:opacity-50 cursor-pointer"> 
+                hover:bg-orange-700 text-white font-semibold text-sm rounded-xl
+                transition-all disabled:opacity-50 cursor-pointer shadow-sm"> 
                    <PlusIcon className='size-5' />
                    <span>New Item</span>
                 </button>
             }
             align='left'
-            className='w-32'>
-                <DropdownItem icon={HardDriveUploadIcon} onClick={()=> fileInputRef.current?.click()}> 
+            className='w-48'>
+                <DropdownItem icon={HardDriveUploadIcon} onClick={()=> {
+                    setIsMobileOpen(false);
+                    fileInputRef.current?.click();
+                }}> 
                     Upload Files
                 </DropdownItem>
-                <DropdownItem icon={FolderPlusIcon} onClick={onCreateFolderClick}> 
+                <DropdownItem icon={FolderPlusIcon} onClick={()=> {
+                    setIsMobileOpen(false);
+                    onCreateFolderClick();
+                }}> 
                     New Folder
                 </DropdownItem>
 
@@ -84,12 +102,12 @@ const Sidebar = ({onCreateFolderClick, isMobileOpen, setIsMobileOpen}) => {
                const isActive = item.path === "/" ? location.pathname === "/" || location.pathname.startsWith("/drive") : location.pathname === item.path;
                return (
                 <Link key={item.path} to={item.path} onClick={()=> setIsMobileOpen(false)}
-                className={`flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium transition-all ${
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                     isActive 
-                    ? "border-r-3 border-orange-500 bg-linear-to-r from-orange-50 to-orange-100 text-orange-600"
+                    ? "border-r-3 border-orange-500 bg-linear-to-r from-orange-50 to-orange-100 text-orange-600 font-semibold"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                 }`}>
-                <Icon className={'size-4.5 ${isActive ? "text-orange-600" : "text-slate-500"}'}/>
+                <Icon className={`size-4.5 ${isActive ? "text-orange-600" : "text-slate-500"}`}/>
                 <span>{item.label}</span>
                 </Link>
                )
@@ -100,7 +118,7 @@ const Sidebar = ({onCreateFolderClick, isMobileOpen, setIsMobileOpen}) => {
         <div className="p-4 border-t border-slate-200 bg-slate-50">
             <div className="flex items-center justify-between text-xs mb-2">
                 <span className="text-slate-600 font-medium">Storage</span>
-                <span className="text-salte-900 font-semibold">{used_percentage}%</span>
+                <span className="text-slate-900 font-semibold">{used_percentage}%</span>
             </div>
             <ProgressBar progress={used_percentage} color=
             {used_percentage > 90 ? "bg-red-600" : used_percentage > 75 ? "bg-amber-500" : "bg-orange-600" }/>

@@ -17,7 +17,7 @@ const SharedFile = () => {
   const [isDeleting, setIsDeleting] = useState(false)
   const [copiedToken, setCopiedToken] = useState(null)
 
-  const fetchShares = async (params) => {
+  const fetchShares = async () => {
     setIsLoading(true);
     try {
       const { data } = await api.get("/api/shares")
@@ -59,15 +59,13 @@ const SharedFile = () => {
     <div className="space-y-6">
       {/* page title & desc */}
       <div className="flex items-center gap-3">
-        <div className='p-2.5 rounded-xl bg-orange-50 text-orange-600 border
-        border-orange-100'>
+        <div className='p-2.5 rounded-xl bg-orange-50 text-orange-600 border border-orange-100 shrink-0'>
           <UserIcon className="size-5"/>
         </div>
         <div>
-          <h2 className="text-xl font-medium text-slate-900">Shared Links</h2>
+          <h2 className="text-lg sm:text-xl font-medium text-slate-900">Shared Links</h2>
           <p className="text-xs text-slate-500">Share links you have created</p>
         </div>
-
       </div>
 
       {/* page content */}
@@ -76,22 +74,19 @@ const SharedFile = () => {
           <Spinner size="lg" className="text-orange-600"/>
         </div>
       ) : shares.length === 0 ? (
-        <EmptyState title='No shared links yet' description='Links you generate for sharing 
-        files and folders will appear here' icon={UsersIcon}/>
+        <EmptyState title='No shared links yet' description='Links you generate for sharing files and folders will appear here' icon={UsersIcon}/>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {shares.map((share)=>(
-            <div key={share.id} className='bg-white border border-slate-200 rounded-2xl p-4
-            space-y-3 flex flex-col justify-between'>
+            <div key={share.id} className='bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 space-y-3 flex flex-col justify-between shadow-xs'>
               {/* Card top */}
               <div>
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                    {getFileIcon(share.resource?.mime_type)}
-                    <h4 className="text-sm font-semibold text-slate-900 truncate">{share.resource?.name || "Shared Item"}</h4>
+                  <div className="flex items-center gap-2.5 min-w-0 pr-1">
+                    {getFileIcon(share.resource?.mime_type, "size-5 shrink-0")}
+                    <h4 className="text-xs sm:text-sm font-semibold text-slate-900 truncate">{share.resource?.name || "Shared Item"}</h4>
                   </div>
-                  <button onClick={()=> setDeletingShare(share)} className='p-1.5 rounded-lg text-slate-400 hover:text-red-600
-                  hover:bg-red-50 transition shrink-0' title='Delete Share Link'>
+                  <button onClick={()=> setDeletingShare(share)} className='p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition shrink-0' title='Delete Share Link' aria-label="Delete share link">
                     <Trash2Icon className="size-4"/>
                   </button>
                 </div>
@@ -103,8 +98,7 @@ const SharedFile = () => {
               </div>
               {/* Card bottom */}
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                <button onClick={()=> handleCopy(share.token)} className='inline-flex items-center gap-1.5 text-xs font-medium
-                text-orange-600 hover:text-orange-700 transition'>
+                <button onClick={()=> handleCopy(share.token)} className='inline-flex items-center gap-1.5 text-xs font-medium text-orange-600 hover:text-orange-700 transition'>
                   {copiedToken === share.token ? (
                     <>
                     <CheckCheck className="w-3.5 h-3.5 text-emerald-600"/>
@@ -119,12 +113,9 @@ const SharedFile = () => {
                 </button>
 
                 <a href={`/s/${share.token}`} target='_blank' rel='noreferrer' 
-                className="p-1 rounded-md text-slate-400 hover:text-slate-700
-                hover:bg-slate-50 transition" title='Open public Link'>
+                className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition" title='Open public Link' aria-label="Open public link">
                   <ExternalLinkIcon className="w-3.5 h-3.5" />
                 </a>
-
-
               </div>
             </div>
           ))}

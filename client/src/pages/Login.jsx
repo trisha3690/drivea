@@ -27,32 +27,33 @@ const Login = ({mode = 'login'}) => {
   return (
     <div className="min-h-screen text-zinc-900 flex flex-col md:flex-row">
         {/* Left Hero Brand Panel */}
-        <div className="md:w-1/2 p-8 md:p-12 lg:p-16 bg-linear-to-br from-orange-50
+        <div className="md:w-1/2 p-6 sm:p-8 md:p-12 lg:p-16 bg-linear-to-br from-orange-50
         via-zinc-100 to-red-50 border-b md:border-b-0 md:border-r border-zinc-200 flex
         flex-col justify-between relative overflow-hidden">
-        <div className='absolute inset-0 bg-[url("/pattern.svg")]'></div>
-        <div className='relative z-10 flex items-center gap-3'>
-            <img src="/logo.svg" alt="Drivea Logo" className="max-h-9" />
-            <span className='text-4xl font-medium uppercase text-zinc-900'>Drivea</span>
-        </div>
+            <div className='absolute inset-0 bg-[url("/pattern.svg")]'></div>
+            <div className='relative z-10 flex items-center gap-2.5 sm:gap-3'>
+                <img src="/logo.svg" alt="Drivea Logo" className="max-h-8 sm:max-h-9" />
+                <span className='text-2xl sm:text-3xl md:text-4xl font-medium uppercase text-zinc-900'>Drivea</span>
+            </div>
 
-        <div className="relative z-10 my-12 space-y-6">
-            <h2 className='text-3xl md:text-4xl lg:text-5xl tracking-tight text-zinc-900 leading-tight'>Secure, Simple & Fast <br /> <span
-             className= 'text-orange-600'>Cloud Storage</span></h2>
-            <p className='text-sm md:text-base text-zinc-600 max-w-md leading-relaxed'>
-                Store your files securely in our drive, organize into folders, share with permissions and access anywhere.
-            </p>
-        </div>
-        <div className='relative z-10 text-sm text-zinc-500'>© 2026 All rights reserved</div>
+            <div className="relative z-10 my-4 md:my-12 space-y-2 md:space-y-6">
+                <h2 className='text-2xl sm:text-3xl md:text-4xl lg:text-5xl tracking-tight text-zinc-900 leading-tight'>
+                    Secure, Simple & Fast <br className="hidden sm:inline" /> <span className='text-orange-600'>Cloud Storage</span>
+                </h2>
+                <p className='hidden sm:block text-sm md:text-base text-zinc-600 max-w-md leading-relaxed'>
+                    Store your files securely in our drive, organize into folders, share with permissions and access anywhere.
+                </p>
+            </div>
+            <div className='relative z-10 text-xs sm:text-sm text-zinc-500 hidden md:block'>© 2026 All rights reserved</div>
         </div>
 
         {/* Right Auth Form */}
-        <div className="md:w-1/2 p-8 md:p-12 lg:p-16 flex items-center justify-center bg-white">
+        <div className="md:w-1/2 p-6 sm:p-8 md:p-12 lg:p-16 flex items-center justify-center bg-white">
           <div className="w-full max-w-md space-y-6 animate-fade-in">
             <div>
-                <h3 className= 'text-2xl font-medium text-zinc-900'>{isRegister ? "Create an account" : "Welcome back"}</h3>
-                <p className='text-sm text-zinc-500 mt-1'>
-                    {isRegister ? "Enter your details to get started with 1 GB free storage" :"Enter your credentials to access your Drive"}
+                <h3 className='text-xl sm:text-2xl font-medium text-zinc-900'>{isRegister ? "Create an account" : "Welcome back"}</h3>
+                <p className='text-xs sm:text-sm text-zinc-500 mt-1'>
+                    {isRegister ? "Enter your details to get started with 1 GB free storage" : "Enter your credentials to access your Drive"}
                 </p>
             </div>
             
@@ -61,7 +62,7 @@ const Login = ({mode = 'login'}) => {
                     <Input
                     label="Full Name" 
                     icon={UserIcon}
-                    placeholder="Enter Name"
+                    placeholder="Alex Morgan"
                     value={form.name}
                     onChange={(e)=> updateField("name", e.target.value)}
                     required
@@ -72,29 +73,28 @@ const Login = ({mode = 'login'}) => {
                     label="Email Address" 
                     type="email"
                     icon={MailIcon}
-                    placeholder="Enter Email"
+                    placeholder="you@example.com"
                     value={form.email}
                     onChange={(e)=> updateField("email", e.target.value)}
                     required
-                    />
+                />
 
-                    <Input
+                <Input
                     label="Password" 
                     type="password"
                     icon={LockIcon}
-                    placeholder="........"
+                    placeholder="••••••••"
                     value={form.password}
                     onChange={(e)=> updateField("password", e.target.value)}
                     required
-                    />
+                />
 
-                    <Button type='submit' variant="primary" className='w-full py-3'
-                    isLoading={isLoading}>
-                        <span className="font-medium text-base">
-                            {isRegister ? "Register Account" : "Sign In"}
-                        </span>
-                    
-                    </Button>
+                <Button type='submit' variant="primary" className='w-full py-3'
+                isLoading={isLoading}>
+                    <span className="font-medium text-sm sm:text-base">
+                        {isRegister ? "Register Account" : "Sign In"}
+                    </span>
+                </Button>
             </form>
 
             <div className="text-center pt-2">
@@ -111,11 +111,9 @@ const Login = ({mode = 'login'}) => {
                         </Link>
                     </p>
                 )}
-
             </div>
 
           </div>
-
         </div>
     </div>
   )

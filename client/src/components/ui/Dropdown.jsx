@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-export function Dropdown({ trigger, children, align = "right", className = "" }) {
+export function Dropdown({ trigger, children, align = "right", position = "bottom", className = "" }) {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -15,6 +15,7 @@ export function Dropdown({ trigger, children, align = "right", className = "" })
     }, []);
 
     const alignStyle = align === "right" ? "right-0" : "left-0";
+    const posStyle = position === "top" ? "bottom-full mb-2" : "top-full mt-2";
 
     return (
         <div className="relative inline-block text-left" ref={dropdownRef}>
@@ -22,7 +23,7 @@ export function Dropdown({ trigger, children, align = "right", className = "" })
 
             {isOpen && (
                 <div
-                    className={`absolute ${alignStyle} mt-2 w-56 rounded-xl bg-white border border-slate-200 py-1.5 z-50 animate-fade-in ${className}`}
+                    className={`absolute ${alignStyle} ${posStyle} w-56 rounded-xl bg-white border border-slate-200 py-1.5 z-50 animate-fade-in ${className}`}
                     onClick={() => setIsOpen(false)}
                 >
                     {children}
