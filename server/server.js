@@ -12,7 +12,7 @@ import shareRouter from "./routes/shareRoutes.js";
 const app = express()
 
 // CORS configuration
-const rawOrigins = process.env.ORIGINS || "http://localhost:5173,http://localhost:5174,http://localhost:3000";
+const rawOrigins = process.env.ORIGINS || "http://localhost:5173,http://localhost:5174,http://localhost:3000,https://drivea-frontend.onrender.com";
 const allowedOrigins = rawOrigins
   .split(",")
   .map((origin) => origin.trim().replace(/^["']|["']$/g, ""))
@@ -27,7 +27,13 @@ app.use(
       // Allow any localhost or 127.0.0.1 port during development
       const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 
-      if (isLocalhost || allowedOrigins.includes(origin)) {
+      // Allow production frontends on Render and Vercel
+      const isAllowedDomain = 
+        allowedOrigins.includes(origin) ||
+        /^https:\/\/drivea-.*\.onrender\.com$/.test(origin) ||
+        /^https:\/\/.*\.vercel\.app$/.test(origin);
+
+      if (isLocalhost || isAllowedDomain) {
         return callback(null, true);
       }
 
