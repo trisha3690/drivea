@@ -27,9 +27,18 @@ const detectFileType = (file) => {
     "py", "csv", "xml", "log", "env", "yml", "yaml", "sh", "sql", "c", "cpp", "java"
   ];
   const docxExts = ["docx", "doc"];
+  const pptxExts = ["pptx", "ppt", "ppsx", "pps", "odp"];
+  const pptxMimes = [
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.slideshow",
+  ];
 
   if (docxExts.includes(ext) || mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || mime === "application/msword") {
     return "docx";
+  }
+  if (pptxExts.includes(ext) || pptxMimes.includes(mime)) {
+    return "pptx";
   }
   if (mime.startsWith("image/") || imageExts.includes(ext)) return "image";
   if (mime.startsWith("video/") || videoExts.includes(ext)) return "video";
@@ -49,8 +58,11 @@ const FilePreview = ({ file, onClose }) => {
     const [mediaError, setMediaError] = useState(false);
     const [textContent, setTextContent] = useState(null);
     const [docxHtml, setDocxHtml] = useState(null);
+    const [isPptxRendering, setIsPptxRendering] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
     const docxContainerRef = useRef(null);
+    const pptxContainerRef = useRef(null);
+    const pptxViewerInstanceRef = useRef(null);
 
     const fileType = detectFileType(file);
 
@@ -78,6 +90,7 @@ const FilePreview = ({ file, onClose }) => {
         setMediaError(false);
         setDocxHtml(null);
         setTextContent(null);
+        setIsPptxRendering(false);
 
         const urls = getAuthenticatedUrls(file.id);
         setDirectViewUrl(urls.view);
@@ -115,6 +128,33 @@ const FilePreview = ({ file, onClose }) => {
                         setMediaError(true);
                     }
                 }
+            } else if (fileType === "pptx") {
+                // Fetch pptx binary blob and render presentation slides
+                setIsPptxRendering(true);
+                const res = await api.get(`/api/files/${file.id}/view`, { responseType: "blob" });
+                const mime = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+                const blob = new Blob([res.data], { type: mime });
+                const objectUrl = URL.createObjectURL(blob);
+                setBlobUrl(objectUrl);
+
+                try {
+                    const arrayBuffer = await res.data.arrayBuffer();
+                    const { PptxViewer, RECOMMENDED_ZIP_LIMITS } = await import("@aiden0z/pptx-renderer");
+                    if (pptxContainerRef.current) {
+                        pptxContainerRef.current.innerHTML = "";
+                        const viewer = await PptxViewer.open(arrayBuffer, pptxContainerRef.current, {
+                            zipLimits: RECOMMENDED_ZIP_LIMITS,
+                            lazySlides: true,
+                            lazyMedia: true,
+                        });
+                        pptxViewerInstanceRef.current = viewer;
+                    }
+                } catch (pptxErr) {
+                    console.error("PPTX render error:", pptxErr);
+                    setMediaError(true);
+                } finally {
+                    setIsPptxRendering(false);
+                }
             } else if (fileType === "text") {
                 const res = await api.get(`/api/files/${file.id}/view`, { responseType: "text" });
                 const text = typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2);
@@ -141,6 +181,13 @@ const FilePreview = ({ file, onClose }) => {
         return () => {
             if (blobUrl && blobUrl.startsWith("blob:")) {
                 URL.revokeObjectURL(blobUrl);
+            }
+            if (pptxViewerInstanceRef.current?.destroy) {
+                try {
+                    pptxViewerInstanceRef.current.destroy();
+                } catch (e) {
+                    // ignore
+                }
             }
         };
     }, [file]);
@@ -298,7 +345,7 @@ const FilePreview = ({ file, onClose }) => {
                             </div>
                         </div>
                     ) : fileType === "docx" ? (
-                        /* Direct Word Document Inline Preview - clean reading view with single top download button */
+                        /* Direct Word Document Inline Preview */
                         docxHtml ? (
                             <div className="w-full flex flex-col h-[75vh] bg-slate-100/70 rounded-xl overflow-hidden border border-slate-200 shadow-sm animate-fade-in">
                                 <div className="flex-1 overflow-y-auto p-4 sm:p-8">
@@ -310,6 +357,21 @@ const FilePreview = ({ file, onClose }) => {
                             </div>
                         ) : (
                             <div ref={docxContainerRef} className="w-full max-h-[75vh] overflow-y-auto bg-white rounded-xl p-6 border border-slate-200" />
+                        )
+                    ) : fileType === "pptx" ? (
+                        /* Direct PowerPoint Presentation Inline Preview */
+                        isPptxRendering ? (
+                            <div className="flex flex-col items-center gap-3 text-slate-500 py-12">
+                                <Loader2Icon className="size-8 animate-spin text-orange-600"/>
+                                <p className="text-sm font-medium">Loading presentation slides...</p>
+                            </div>
+                        ) : (
+                            <div className="w-full flex flex-col h-[75vh] bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-sm animate-fade-in">
+                                <div 
+                                  ref={pptxContainerRef} 
+                                  className="w-full h-full overflow-auto flex items-center justify-center p-2 sm:p-4 pptx-preview-container" 
+                                />
+                            </div>
                         )
                     ) : fileType === "image" && (blobUrl || directViewUrl) ? (
                         <div className="flex items-center justify-center w-full h-full">
