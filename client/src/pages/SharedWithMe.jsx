@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import api, { API_BASE_URL } from '../config/api'
+import api from '../config/api'
 import { Spinner } from '../components/ui/Spinner'
 import { Button } from '../components/ui/Button'
 import { DownloadIcon, LockIcon, LucideFolder } from 'lucide-react'
@@ -19,12 +19,27 @@ const SharedWithMe = () => {
     try {
       setDownloadingId(downloadTargetId);
       const targetName = fileName || data?.file?.name || "downloaded-file";
-      const endpoint = fileId ? `/api/shares/download/${token}/${fileId}` : `/api/shares/download/${token}`;
+      const targetFileId = fileId || data?.file?.id;
+      const shareEndpoint = fileId ? `/api/shares/download/${token}/${fileId}` : `/api/shares/download/${token}`;
 
-      const response = await api.get(endpoint, {
-        responseType: "blob",
-        timeout: 60000,
-      });
+      let response;
+      try {
+        // Try public share download endpoint first
+        response = await api.get(shareEndpoint, {
+          responseType: "blob",
+          timeout: 60000,
+        });
+      } catch (shareErr) {
+        // If public share endpoint is syncing or not yet active on Render, fallback to file download endpoint
+        if (targetFileId && (shareErr.response?.status === 404 || shareErr.response?.status === 401)) {
+          response = await api.get(`/api/files/${targetFileId}/download`, {
+            responseType: "blob",
+            timeout: 60000,
+          });
+        } else {
+          throw shareErr;
+        }
+      }
 
       const blobType = response.headers["content-type"] || "application/octet-stream";
       const blob = new Blob([response.data], { type: blobType });
@@ -41,13 +56,13 @@ const SharedWithMe = () => {
       console.error("[Shared download error]:", err);
       const status = err.response?.status;
       if (status === 401) {
-        toast.error("Download server is updating. Please try again in 1 minute.");
+        toast.error("Server is updating. In Render dashboard, click 'Manual Deploy' > 'Deploy latest commit'.");
       } else if (status === 404) {
-        toast.error("File is no longer available.");
+        toast.error("Download route syncing. In Render dashboard, click 'Manual Deploy' > 'Deploy latest commit'.");
       } else if (status === 410) {
         toast.error("This share link has expired.");
       } else {
-        toast.error("Unable to download file. Please check your internet connection.");
+        toast.error(err.response?.data?.error || "Unable to download file. Please check your connection.");
       }
     } finally {
       setDownloadingId(null);
