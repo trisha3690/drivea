@@ -29,6 +29,46 @@ const Drive = () => {
     fetchDriveContent(id);
   }, [folderId, fetchDriveContent, setCurrentFolderId]);
 
+  const handleOpenPreview = (file) => {
+    setShareItem(null);
+    setRenameItem(null);
+    setMoveItem(null);
+    setDeleteItem(null);
+    setPreviewFile(file);
+  };
+
+  const handleOpenShare = (item) => {
+    setPreviewFile(null);
+    setRenameItem(null);
+    setMoveItem(null);
+    setDeleteItem(null);
+    setShareItem(item);
+  };
+
+  const handleOpenRename = (item) => {
+    setPreviewFile(null);
+    setShareItem(null);
+    setMoveItem(null);
+    setDeleteItem(null);
+    setRenameItem(item);
+  };
+
+  const handleOpenMove = (item) => {
+    setPreviewFile(null);
+    setShareItem(null);
+    setRenameItem(null);
+    setDeleteItem(null);
+    setMoveItem(item);
+  };
+
+  const handleOpenDelete = (item) => {
+    setPreviewFile(null);
+    setShareItem(null);
+    setRenameItem(null);
+    setMoveItem(null);
+    setDeleteItem(item);
+  };
+
   const handleConfirmDelete = async () => {
     if (!deleteItem) return;
     await removeDriveItem(deleteItem);
@@ -43,11 +83,11 @@ const Drive = () => {
       {/* folder & files */}
       <FileGrid 
         onFolderClick={(folder) => navigate(`/drive/${folder.id}`)}
-        onPreviewFile={setPreviewFile}
-        onShareItem={setShareItem}
-        onRenameItem={setRenameItem}
-        onMoveItem={setMoveItem}
-        onDeleteItem={setDeleteItem}
+        onPreviewFile={handleOpenPreview}
+        onShareItem={handleOpenShare}
+        onRenameItem={handleOpenRename}
+        onMoveItem={handleOpenMove}
+        onDeleteItem={handleOpenDelete}
         onToggleStarItem={toggleStarItem}
       />
 
