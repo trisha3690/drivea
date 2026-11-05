@@ -9,7 +9,9 @@ import {
   FileTextIcon, 
   Loader2Icon, 
   RefreshCwIcon, 
-  XIcon 
+  XIcon,
+  ZoomInIcon,
+  ZoomOutIcon
 } from 'lucide-react';
 import { formatBytes, getFileIcon } from '../../assets/assets';
 
@@ -48,6 +50,175 @@ const detectFileType = (file) => {
   return "other";
 };
 
+// Clean inline PDF renderer on white background with page zoom controls
+const PdfRenderer = ({ buffer, directUrl, onMediaError }) => {
+    const [numPages, setNumPages] = useState(0);
+    const [scale, setScale] = useState(1.15);
+    const [isLoading, setIsLoading] = useState(true);
+    const [pdfDoc, setPdfDoc] = useState(null);
+    const [renderError, setRenderError] = useState(false);
+    const canvasRefs = useRef({});
+    const renderTasksRef = useRef({});
+
+    useEffect(() => {
+        let active = true;
+        setIsLoading(true);
+        setRenderError(false);
+        setNumPages(0);
+        setPdfDoc(null);
+
+        (async () => {
+            try {
+                const pdfjsLib = await import('pdfjs-dist');
+                const pdfWorker = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
+                pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+
+                const input = buffer ? { data: new Uint8Array(buffer) } : { url: directUrl };
+                const loadingTask = pdfjsLib.getDocument(input);
+                const doc = await loadingTask.promise;
+                if (!active) return;
+                setPdfDoc(doc);
+                setNumPages(doc.numPages);
+            } catch (err) {
+                console.error("PDF load error:", err);
+                if (active) {
+                    setRenderError(true);
+                }
+            } finally {
+                if (active) setIsLoading(false);
+            }
+        })();
+
+        return () => {
+            active = false;
+        };
+    }, [buffer, directUrl]);
+
+    useEffect(() => {
+        if (!pdfDoc || numPages === 0) return;
+        let canceled = false;
+
+        const renderAllPages = async () => {
+            for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                if (canceled) break;
+                const canvas = canvasRefs.current[pageNum];
+                if (!canvas) continue;
+
+                try {
+                    if (renderTasksRef.current[pageNum]) {
+                        try { renderTasksRef.current[pageNum].cancel(); } catch (e) {}
+                    }
+                    const page = await pdfDoc.getPage(pageNum);
+                    if (canceled) break;
+
+                    const viewport = page.getViewport({ scale });
+                    const ctx = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    const renderContext = {
+                        canvasContext: ctx,
+                        viewport: viewport,
+                    };
+                    const task = page.render(renderContext);
+                    renderTasksRef.current[pageNum] = task;
+                    await task.promise;
+                } catch (e) {
+                    if (e?.name !== 'RenderingCancelledException') {
+                        console.warn(`Error rendering page ${pageNum}:`, e);
+                    }
+                }
+            }
+        };
+
+        renderAllPages();
+
+        return () => {
+            canceled = true;
+            Object.values(renderTasksRef.current).forEach(t => {
+                try { t?.cancel?.(); } catch (e) {}
+            });
+        };
+    }, [pdfDoc, numPages, scale]);
+
+    if (renderError) {
+        return (
+            <div className="w-full h-[75vh] flex flex-col rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
+                <iframe 
+                  src={directUrl} 
+                  title="PDF Preview" 
+                  onError={onMediaError}
+                  className="w-full h-full bg-white"
+                />
+            </div>
+        );
+    }
+
+    return (
+        <div className="w-full flex flex-col h-[75vh] bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm relative animate-fade-in">
+            {/* Clean White PDF Controls Bar */}
+            <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs">
+                <div className="flex items-center gap-2">
+                    <span className="font-medium text-slate-700">
+                        {numPages > 0 ? `${numPages} Pages` : "Loading pages..."}
+                    </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setScale(s => Math.max(0.6, Number((s - 0.15).toFixed(2))))}
+                      className="p-1 hover:bg-slate-200 rounded text-slate-600 transition"
+                      title="Zoom out"
+                    >
+                        <ZoomOutIcon className="size-4" />
+                    </button>
+                    <span className="font-mono text-slate-600 px-1 text-[11px] min-w-10 text-center">
+                        {Math.round(scale * 100)}%
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setScale(s => Math.min(2.5, Number((s + 0.15).toFixed(2))))}
+                      className="p-1 hover:bg-slate-200 rounded text-slate-600 transition"
+                      title="Zoom in"
+                    >
+                        <ZoomInIcon className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setScale(1.15)}
+                      className="px-2 py-0.5 hover:bg-slate-200 rounded text-[11px] text-slate-600 font-medium transition ml-1"
+                      title="Reset zoom"
+                    >
+                        Reset
+                    </button>
+                </div>
+            </div>
+
+            {/* Scrollable White Canvas Pages */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50 flex flex-col items-center">
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500 py-12">
+                        <Loader2Icon className="size-8 animate-spin text-orange-600" />
+                        <p className="text-sm font-medium">Rendering PDF pages...</p>
+                    </div>
+                ) : (
+                    Array.from({ length: numPages }, (_, i) => i + 1).map(pageNum => (
+                        <div key={pageNum} className="flex flex-col items-center mb-6">
+                            <canvas
+                              ref={el => (canvasRefs.current[pageNum] = el)}
+                              className="shadow-sm rounded-lg border border-slate-200 bg-white max-w-full"
+                            />
+                            <span className="text-[11px] font-medium text-slate-500 mt-2">
+                                Page {pageNum} of {numPages}
+                            </span>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+};
+
 const FilePreview = ({ file, onClose }) => {
     const [blobUrl, setBlobUrl] = useState(null);
     const [directViewUrl, setDirectViewUrl] = useState(null);
@@ -61,6 +232,7 @@ const FilePreview = ({ file, onClose }) => {
     const [pptxBuffer, setPptxBuffer] = useState(null);
     const [fallbackSlides, setFallbackSlides] = useState([]);
     const [isPptxRendering, setIsPptxRendering] = useState(false);
+    const [pdfBuffer, setPdfBuffer] = useState(null);
     const [isCopied, setIsCopied] = useState(false);
     const docxContainerRef = useRef(null);
     const pptxContainerRef = useRef(null);
@@ -93,6 +265,7 @@ const FilePreview = ({ file, onClose }) => {
         setDocxHtml(null);
         setTextContent(null);
         setPptxBuffer(null);
+        setPdfBuffer(null);
         setFallbackSlides([]);
         setIsPptxRendering(false);
 
@@ -147,10 +320,16 @@ const FilePreview = ({ file, onClose }) => {
                 const res = await api.get(`/api/files/${file.id}/view`, { responseType: "text" });
                 const text = typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2);
                 setTextContent(text.slice(0, 200000));
-            } else if (fileType === "image" || fileType === "pdf") {
+            } else if (fileType === "pdf") {
                 const res = await api.get(`/api/files/${file.id}/view`, { responseType: "blob" });
-                const mime = file.mime_type || (fileType === "pdf" ? "application/pdf" : "image/jpeg");
-                const blob = new Blob([res.data], { type: mime });
+                const blob = new Blob([res.data], { type: "application/pdf" });
+                const objectUrl = URL.createObjectURL(blob);
+                setBlobUrl(objectUrl);
+                const arrayBuffer = await res.data.arrayBuffer();
+                setPdfBuffer(arrayBuffer);
+            } else if (fileType === "image") {
+                const res = await api.get(`/api/files/${file.id}/view`, { responseType: "blob" });
+                const blob = new Blob([res.data], { type: file.mime_type || "image/jpeg" });
                 const objectUrl = URL.createObjectURL(blob);
                 setBlobUrl(objectUrl);
             } else if (fileType === "video" || fileType === "audio") {
@@ -474,14 +653,11 @@ const FilePreview = ({ file, onClose }) => {
                             />
                         </div>
                     ) : fileType === "pdf" && (blobUrl || directViewUrl) ? (
-                        <div className="w-full h-[70vh] flex flex-col rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
-                            <iframe 
-                              src={blobUrl || directViewUrl} 
-                              title={file.name} 
-                              onError={() => setMediaError(true)}
-                              className="w-full h-full"
-                            />
-                        </div>
+                        <PdfRenderer 
+                          buffer={pdfBuffer} 
+                          directUrl={blobUrl || directViewUrl} 
+                          onMediaError={() => setMediaError(true)} 
+                        />
                     ) : fileType === "text" ? (
                         textContent !== null ? (
                             <div className="w-full flex flex-col max-h-[70vh] bg-slate-900 rounded-xl overflow-hidden shadow-sm">
