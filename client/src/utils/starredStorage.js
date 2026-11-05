@@ -30,3 +30,4 @@ export const toggleLocalStarredId = (itemId, willBeStarred) => {
     console.warn("Could not save to localStorage", e);
   }
 };
+
