@@ -18,13 +18,16 @@ const Sidebar = ({onCreateFolderClick, isMobileOpen, setIsMobileOpen}) => {
     const storage_limit = Number(user?.storage_limit ?? 1073741824); //1GB
     const used_percentage = Math.min(100, Math.round((storage_used / storage_limit) * 100))
 
-    const handleFileSelect = (e)=> {
-        if(e.target.files && e.target.files.length > 0){
-            uploadFiles(e.target.files, currentFolderId);
-            e.target.value="";
+    const handleFileSelect = (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const files = Array.from(e.target.files);
+            uploadFiles(files, currentFolderId);
+            setTimeout(() => {
+                if (e.target) e.target.value = "";
+            }, 500);
             setIsMobileOpen?.(false);
         }
-    }
+    };
 
     const navItems = [
         {label: "My Drive", path: "/", icon: HardDriveIcon},

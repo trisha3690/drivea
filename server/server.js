@@ -48,6 +48,7 @@ app.use(
 // Middlewares
 app.use(cookieParser())
 app.use(express.json({limit: "100mb"}))
+app.use(express.urlencoded({ extended: true, limit: "100mb" }))
 
 // Root API
 app.get("/", (_req, res) => res.send("Server is Running"))
