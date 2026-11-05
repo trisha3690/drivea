@@ -10,8 +10,10 @@ export function ItemDropdown({ item, onPreview, onShare, onRename, onMove, onDel
                 trigger={
                     <button
                         type="button"
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                        aria-label="Actions"
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                        aria-label="Item actions"
+                        title="More options"
                     >
                         <MoreVerticalIcon className="size-4" />
                     </button>

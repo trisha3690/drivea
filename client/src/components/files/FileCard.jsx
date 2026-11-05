@@ -19,17 +19,17 @@ const FileCard = ({ file, onPreview, onShare, onRename, onMove, onDelete, onTogg
         <div className='p-2 sm:p-2.5 rounded-xl bg-slate-50 border border-slate-100 shrink-0'>
           {getFileIcon(file.mime_type, "size-5 sm:size-6")}
         </div>
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               onToggleStar?.(file);
             }}
-            className={`p-1.5 rounded-lg transition ${
+            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
               isStarred
                 ? "text-amber-500 hover:bg-amber-50"
-                : "text-slate-300 hover:text-amber-500 hover:bg-slate-100 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                : "text-slate-300 hover:text-amber-500 hover:bg-slate-100"
             }`}
             title={isStarred ? "Remove from Starred" : "Add to Starred"}
             aria-label={isStarred ? "Remove from Starred" : "Add to Starred"}

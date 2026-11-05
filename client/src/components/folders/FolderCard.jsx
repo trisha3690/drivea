@@ -25,17 +25,17 @@ const FolderCard = ({ folder, onClick, onShare, onRename, onMove, onDelete, onTo
         </h4>
       </button>
 
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onToggleStar?.(folder);
           }}
-          className={`p-1.5 rounded-lg transition ${
+          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
             isStarred
               ? "text-amber-500 hover:bg-amber-50"
-              : "text-slate-300 hover:text-amber-500 hover:bg-slate-100 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+              : "text-slate-300 hover:text-amber-500 hover:bg-slate-100"
           }`}
           title={isStarred ? "Remove from Starred" : "Add to Starred"}
           aria-label={isStarred ? "Remove from Starred" : "Add to Starred"}

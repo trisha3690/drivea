@@ -130,7 +130,7 @@ export function useDrive() {
   const renameItem = (item, newName) => {
     const isFolder = isFolderItem(item);
     const endpoint = isFolder ? "folders" : "files";
-    const id = item.id || item;
+    const id = item?.id || item?._id || item;
     return runAction(
       api.patch(`/api/${endpoint}/${id}/rename`, { name: newName }),
       `${isFolder ? "Folder" : "File"} renamed`,
@@ -143,7 +143,7 @@ export function useDrive() {
     const isFolder = isFolderItem(item);
     const endpoint = isFolder ? "folders" : "files";
     const payload = isFolder ? { target_parent: targetFolderId } : { target_folder: targetFolderId };
-    const id = item.id || item;
+    const id = item?.id || item?._id || item;
     return runAction(
       api.patch(`/api/${endpoint}/${id}/move`, payload),
       `${isFolder ? "Folder" : "File"} moved`,
@@ -155,7 +155,7 @@ export function useDrive() {
   const deleteItem = (item) => {
     const isFolder = isFolderItem(item);
     const endpoint = isFolder ? "folders" : "files";
-    const id = item.id || item;
+    const id = item?.id || item?._id || item;
     return runAction(
       api.delete(`/api/${endpoint}/${id}`),
       `${isFolder ? "Folder" : "File"} moved to Trash`,
@@ -166,7 +166,7 @@ export function useDrive() {
 
   const restoreItem = (item) => {
     const endpoint = isFolderItem(item) ? "folders" : "files";
-    const id = item.id || item;
+    const id = item?.id || item?._id || item;
     return runAction(
       api.post(`/api/${endpoint}/${id}/restore`),
       "Item restored",
@@ -176,7 +176,7 @@ export function useDrive() {
 
   const permanentDeleteItem = (item) => {
     const endpoint = isFolderItem(item) ? "folders" : "files";
-    const id = item.id || item;
+    const id = item?.id || item?._id || item;
     return runAction(
       api.delete(`/api/${endpoint}/${id}/permanent`),
       "Item permanently deleted",
@@ -188,7 +188,7 @@ export function useDrive() {
   const toggleStarItem = async (item) => {
     const isFolder = isFolderItem(item);
     const endpoint = isFolder ? "folders" : "files";
-    const id = item?.id || item;
+    const id = item?.id || item?._id || item;
     const currentlyStarred = isItemStarredLocal(item);
     const willBeStarred = !currentlyStarred;
 
