@@ -32,51 +32,63 @@ const Starred = () => {
       const starredIds = new Set(getLocalStarredIds());
       const unstarredIds = new Set(getLocalUnstarredIds());
 
+      let serverFolders = [];
+      let serverFiles = [];
+      let serverSuccess = false;
+
       try {
         const { data } = await api.get('/api/starred');
         if (data && (Array.isArray(data.folders) || Array.isArray(data.files))) {
-          const rawFolders = (data.folders || []).map((f) => ({ ...f, item_type: "folder", is_starred: true }));
-          const rawFiles = (data.files || []).map((f) => ({ ...f, item_type: "file", is_starred: true }));
-
-          const finalFolders = rawFolders.filter((f) => !unstarredIds.has(f.id));
-          const finalFiles = rawFiles.filter((f) => !unstarredIds.has(f.id));
-
-          setStarredItems({
-            folders: finalFolders,
-            files: finalFiles,
-          });
-          return;
+          serverFolders = data.folders || [];
+          serverFiles = data.files || [];
+          serverSuccess = true;
         }
-      } catch {
-        // Backend /api/starred route may still be deploying; use resilient fallback
+      } catch (err) {
+        console.warn("/api/starred endpoint not ready, using fallback:", err);
       }
 
-      // Resilient fallback: fetch all drive items and filter by starred IDs
-      const [folderRes, fileRes] = await Promise.all([
-        api.get("/api/folders"),
-        api.get("/api/files")
-      ]);
+      if (serverSuccess) {
+        // Filter out any locally unstarred items
+        const finalFolders = serverFolders
+          .filter((f) => !unstarredIds.has(f.id))
+          .map((f) => ({ ...f, item_type: "folder", is_starred: true }));
 
-      const allFolders = (folderRes.data?.folders || []).map((f) => {
-        let isStarred = !!f.is_starred;
-        if (unstarredIds.has(f.id)) isStarred = false;
-        else if (starredIds.has(f.id)) isStarred = true;
-        return { ...f, item_type: "folder", is_starred: isStarred };
-      });
+        const finalFiles = serverFiles
+          .filter((f) => !unstarredIds.has(f.id))
+          .map((f) => ({ ...f, item_type: "file", is_starred: true }));
 
-      const allFiles = (fileRes.data?.files || []).map((f) => {
-        let isStarred = !!f.is_starred;
-        if (unstarredIds.has(f.id)) isStarred = false;
-        else if (starredIds.has(f.id)) isStarred = true;
-        return { ...f, item_type: "file", is_starred: isStarred };
-      });
+        setStarredItems({
+          folders: finalFolders,
+          files: finalFiles,
+        });
+      } else {
+        // Resilient fallback: fetch all drive items and filter by starred IDs
+        const [folderRes, fileRes] = await Promise.all([
+          api.get("/api/folders"),
+          api.get("/api/files")
+        ]);
 
-      setStarredItems({
-        folders: allFolders.filter((f) => f.is_starred),
-        files: allFiles.filter((f) => f.is_starred)
-      });
+        const allFolders = (folderRes.data?.folders || []).map((f) => {
+          let isStarred = !!f.is_starred;
+          if (unstarredIds.has(f.id)) isStarred = false;
+          else if (starredIds.has(f.id)) isStarred = true;
+          return { ...f, item_type: "folder", is_starred: isStarred };
+        });
+
+        const allFiles = (fileRes.data?.files || []).map((f) => {
+          let isStarred = !!f.is_starred;
+          if (unstarredIds.has(f.id)) isStarred = false;
+          else if (starredIds.has(f.id)) isStarred = true;
+          return { ...f, item_type: "file", is_starred: isStarred };
+        });
+
+        setStarredItems({
+          folders: allFolders.filter((f) => f.is_starred),
+          files: allFiles.filter((f) => f.is_starred),
+        });
+      }
     } catch (fallbackErr) {
-      console.warn("Could not load starred fallback:", fallbackErr.message);
+      console.warn("Could not load starred fallback:", fallbackErr);
       toast.error('Error loading starred items');
     } finally {
       setIsLoading(false);
