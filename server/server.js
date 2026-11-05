@@ -31,17 +31,18 @@ app.use(
       const isAllowedDomain = 
         allowedOrigins.includes(origin) ||
         /^https:\/\/drivea-.*\.onrender\.com$/.test(origin) ||
-        /^https:\/\/.*\.vercel\.app$/.test(origin);
+        /^https:\/\/.*\.vercel\.app$/.test(origin) ||
+        origin.endsWith('.vercel.app');
 
       if (isLocalhost || isAllowedDomain) {
         return callback(null, true);
       }
 
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
+      console.warn('[CORS Rejected Origin]:', origin);
+      return callback(null, false);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
   })
 );
 
