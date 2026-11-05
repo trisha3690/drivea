@@ -366,7 +366,7 @@ export const toggleStarFile = async (req, res) => {
             return res.status(404).json({ error: "File not found." });
         }
 
-        const newStarred = !file.is_starred;
+        const newStarred = !Boolean(file.is_starred);
         const [updated] = await sql`
         UPDATE files 
         SET is_starred = ${newStarred}, updated_at = NOW() 

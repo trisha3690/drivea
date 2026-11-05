@@ -1,7 +1,7 @@
 import toast from "react-hot-toast";
 import { useApp } from "../context/AppContext";
 import api from "../config/api";
-import { getLocalStarredIds, isItemStarredLocal, toggleLocalStarredId } from "../utils/starredStorage";
+import { isItemStarredLocal, toggleLocalStarredId } from "../utils/starredStorage";
 
 const isFolderItem = (item) => item?.item_type === "folder" || (!item?.mime_type && item?.path !== undefined);
 
@@ -10,6 +10,8 @@ export function useDrive() {
     fetchDriveContent,
     refreshUser,
     currentFolderId,
+    setFolders,
+    setFiles,
     isUploading,
     setIsUploading,
     uploadProgress,
@@ -192,18 +194,32 @@ export function useDrive() {
     const currentlyStarred = isItemStarredLocal(item);
     const willBeStarred = !currentlyStarred;
 
-    // Immediately update local storage and item property for instant feedback
+    // 1. Instantly update local storage and React state optimistically
     toggleLocalStarredId(id, willBeStarred);
     if (typeof item === "object" && item !== null) {
       item.is_starred = willBeStarred;
     }
+    if (isFolder) {
+      setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, is_starred: willBeStarred } : f)));
+    } else {
+      setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, is_starred: willBeStarred } : f)));
+    }
 
     toast.success(willBeStarred ? "Added to Starred" : "Removed from Starred");
-    fetchDriveContent();
 
-    // Sync to backend API in background
+    // 2. Sync to backend API
     try {
-      await api.patch(`/api/${endpoint}/${id}/star`);
+      const res = await api.patch(`/api/${endpoint}/${id}/star`);
+      const serverStarred = res.data?.is_starred ?? willBeStarred;
+      toggleLocalStarredId(id, serverStarred);
+      if (typeof item === "object" && item !== null) {
+        item.is_starred = serverStarred;
+      }
+      if (isFolder) {
+        setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, is_starred: serverStarred } : f)));
+      } else {
+        setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, is_starred: serverStarred } : f)));
+      }
     } catch (err) {
       console.warn("Backend star sync pending:", err.message);
     }
