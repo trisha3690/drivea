@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 export function Dropdown({ trigger, children, align = "right", position = "bottom", className = "" }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -21,19 +21,28 @@ export function Dropdown({ trigger, children, align = "right", position = "botto
     const alignStyle = align === "right" ? "right-0" : "left-0";
     const posStyle = position === "top" ? "bottom-full mb-2" : "top-full mt-2";
 
+    const handleToggle = (e) => {
+        e?.stopPropagation();
+        setIsOpen((prev) => !prev);
+    };
+
+    const triggerElement = React.isValidElement(trigger)
+        ? React.cloneElement(trigger, {
+            onClick: (e) => {
+                trigger.props.onClick?.(e);
+                handleToggle(e);
+            },
+        })
+        : trigger;
+
     return (
         <div 
             className="relative inline-block text-left" 
             ref={dropdownRef} 
             onClick={(e) => e.stopPropagation()}
         >
-            <div 
-                onClick={(e) => { 
-                    e.stopPropagation(); 
-                    setIsOpen((prev) => !prev); 
-                }}
-            >
-                {trigger}
+            <div onClick={handleToggle} className="cursor-pointer">
+                {triggerElement}
             </div>
 
             {isOpen && (
@@ -57,7 +66,6 @@ export function DropdownItem({ children, icon: Icon, onClick, danger = false, di
             type="button"
             disabled={disabled}
             onClick={(e) => {
-                e.stopPropagation();
                 onClick?.(e);
             }}
             className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2.5 transition ${
