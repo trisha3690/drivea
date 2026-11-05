@@ -1,117 +1,138 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import api from "../config/api";
+import { getLocalStarredIds } from "../utils/starredStorage";
 
-const AppContext = createContext()
+const AppContext = createContext();
 
-const ROOT_BREADCRUMB = [{id: null, name:"My Drive"}]
+const ROOT_BREADCRUMB = [{ id: null, name: "My Drive" }];
 const getErrMsg = (err, fallback) => err.response?.data?.error || fallback;
 
-export const AppProvider = ({children}) => {
+export const AppProvider = ({ children }) => {
+    const [user, setUser] = useState(null);
+    const [isLoading, setLoading] = useState(true);
 
-    const [user, setUser] = useState(null) 
-    const [isLoading, setLoading] = useState(true)
-
-    //Upload Global State
+    // Upload Global State
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    //Drive View State
-    const [ currentFolderId, setCurrentFolderId] = useState(null)
-    const [breadcrumbs, setBreadcrumbs] = useState(ROOT_BREADCRUMB)
-    const [folders, setFolders] = useState([])
+    // Drive View State
+    const [currentFolderId, setCurrentFolderId] = useState(null);
+    const [breadcrumbs, setBreadcrumbs] = useState(ROOT_BREADCRUMB);
+    const [folders, setFolders] = useState([]);
     const [files, setFiles] = useState([]);
-    const [isDriveLoading, setIsDriveLoading] = useState(false)
+    const [isDriveLoading, setIsDriveLoading] = useState(false);
 
     // Filter & Sort State
-    const [searchQuery, setSearchQuery] =useState("")
-    const [sortBy, setSortBy] = useState("name_asc")
+    const [searchQuery, setSearchQuery] = useState("");
+    const [sortBy, setSortBy] = useState("name_asc");
 
-    //Refresh User Profile & Storage Stats
-    const refreshUser = useCallback( async () =>{
-      try{
-        const {data} = await api.get("/api/auth/me");
-        if (data?.token) {
-            localStorage.setItem("token", data.token);
+    // Refresh User Profile & Storage Stats
+    const refreshUser = useCallback(async () => {
+        try {
+            const { data } = await api.get("/api/auth/me");
+            if (data?.token) {
+                localStorage.setItem("token", data.token);
+            }
+            setUser(data.user);
+            return data.user;
+        } catch (error) {
+            setUser(null);
+            return null;
         }
-        setUser(data.user)
-        return data.user;
-      } catch (error) {
-        setUser(null)
-        return null
-      }
-    },[])
+    }, []);
 
-    //Chech Auth Status on App Load
-    useEffect(()=>{
-        refreshUser().finally(()=> setLoading(false))
-    },[refreshUser])
-
+    // Check Auth Status on App Load
+    useEffect(() => {
+        refreshUser().finally(() => setLoading(false));
+    }, [refreshUser]);
 
     // Auth Actions Helper
-    const authAction = async (requestFn, successMsg, errorFallback)=>{
-       try{
-          const {data} = await requestFn();
-          if (data?.token) {
-              localStorage.setItem("token", data.token);
-          }
-          setUser(data.user)
-          if(successMsg) toast.success(successMsg)
+    const authAction = async (requestFn, successMsg, errorFallback) => {
+        try {
+            const { data } = await requestFn();
+            if (data?.token) {
+                localStorage.setItem("token", data.token);
+            }
+            setUser(data.user);
+            if (successMsg) toast.success(successMsg);
             return true;
-       } catch(error) {
-           toast.error(getErrMsg(error, errorFallback))
-           return false
-       }
-    }
+        } catch (error) {
+            toast.error(getErrMsg(error, errorFallback));
+            return false;
+        }
+    };
 
-    const login = (email, password)=>{ 
-        return authAction(()=> api.post("/api/auth/login",{email, password}), "Welcome back!","Login failed" )
-    }
+    const login = (email, password) => {
+        return authAction(() => api.post("/api/auth/login", { email, password }), "Welcome back!", "Login failed");
+    };
 
-    const register = (name, email, password)=>{ 
-        return authAction(()=> api.post("/api/auth/register",{name, email, password}), "Account created successfully!","Registration failed" )
-    }
+    const register = (name, email, password) => {
+        return authAction(() => api.post("/api/auth/register", { name, email, password }), "Account created successfully!", "Registration failed");
+    };
 
     const logout = async () => {
-        try{
-           await api.post("/api/auth/logout")
+        try {
+            await api.post("/api/auth/logout");
         } catch (error) {
-           console.error("Logout error:", error);
+            console.error("Logout error:", error);
         } finally {
-           localStorage.removeItem("token");
-           setUser(null)
-           toast.success("Logged out")
+            localStorage.removeItem("token");
+            setUser(null);
+            toast.success("Logged out");
         }
-    }
+    };
 
     const fetchDriveContent = useCallback(
-        async (folderId = currentFolderId, search = searchQuery, sort = sortBy)=>{
-            if(!user) return;
-            setIsDriveLoading(true)
-            try{
+        async (folderId = currentFolderId, search = searchQuery, sort = sortBy) => {
+            if (!user) return;
+            setIsDriveLoading(true);
+            try {
                 const parentParam = folderId || "null";
                 const [folderRes, fileRes, detailRes] = await Promise.all([
-                    api.get("/api/folders", {params: { parent_id: parentParam }}),
-                    api.get("/api/files", {params: { folder_id: parentParam, search,
-                    sort }}),
+                    api.get("/api/folders", { params: { parent_id: parentParam } }),
+                    api.get("/api/files", {
+                        params: { folder_id: parentParam, search, sort },
+                    }),
                     folderId ? api.get(`/api/folders/${folderId}`) : null,
-                ])
+                ]);
 
-                setFolders(folderRes.data.folders);
-                setFiles(fileRes.data.files);
-                setBreadcrumbs(detailRes?.data?.breadcrumbs || ROOT_BREADCRUMB)
+                const starredIds = new Set(getLocalStarredIds());
+                const rawFolders = folderRes.data.folders || [];
+                const rawFiles = fileRes.data.files || [];
+
+                const mappedFolders = rawFolders.map((f) => ({
+                    ...f,
+                    item_type: "folder",
+                    is_starred: !!f.is_starred || starredIds.has(f.id),
+                }));
+
+                const mappedFiles = rawFiles.map((f) => ({
+                    ...f,
+                    item_type: "file",
+                    is_starred: !!f.is_starred || starredIds.has(f.id),
+                }));
+
+                setFolders(mappedFolders);
+                setFiles(mappedFiles);
+                setBreadcrumbs(detailRes?.data?.breadcrumbs || ROOT_BREADCRUMB);
             } catch {
                 toast.error("Error loading drive contents");
             } finally {
-                setIsDriveLoading(false)
+                setIsDriveLoading(false);
             }
         },
         [user, currentFolderId, searchQuery, sortBy]
-    )
+    );
 
     const value = {
-        user, setUser, login, register, logout,
-        isLoading, isAuthenticated: !!user,
+        user,
+        setUser,
+        login,
+        register,
+        logout,
+        isLoading,
+        isAuthenticated: !!user,
         isUploading,
         setIsUploading,
         uploadProgress,
@@ -130,10 +151,9 @@ export const AppProvider = ({children}) => {
         setSearchQuery,
         sortBy,
         setSortBy,
-    }
-    return <AppContext.Provider value={value}>
-        {children}
-    </AppContext.Provider>
-}
+    };
+
+    return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+};
 
 export const useApp = () => useContext(AppContext);

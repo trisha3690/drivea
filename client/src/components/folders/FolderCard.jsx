@@ -1,20 +1,28 @@
-import { LucideFolder, StarIcon } from 'lucide-react'
-import React from 'react'
-import { ItemDropdown } from '../ui/ItemDropdown'
+import { LucideFolder, StarIcon } from 'lucide-react';
+import React from 'react';
+import { ItemDropdown } from '../ui/ItemDropdown';
+import { isItemStarredLocal } from '../../utils/starredStorage';
 
-const FolderCard = ({folder, onClick, onShare, onRename, onMove, onDelete, onToggleStar}) => {
+const FolderCard = ({ folder, onClick, onShare, onRename, onMove, onDelete, onToggleStar }) => {
+  const isStarred = isItemStarredLocal(folder);
+
   return (
     <div className="group relative bg-white border border-slate-200 hover:border-orange-200 rounded-2xl
     p-3.5 sm:p-4 transition-all duration-200 flex items-center justify-between gap-2 shadow-xs">
       <button
-      type="button"
-      onClick={()=> onClick(folder)}
-      className="flex-1 flex items-center gap-2.5 sm:gap-3 min-w-0 pr-1 text-left cursor-pointer">
-            <div className="p-2 sm:p-2.5 rounded-xl bg-orange-50 text-orange-600 shrink-0 border border-orange-100">
-                <LucideFolder className="size-5 sm:size-6 fill-orange-500/20"/>
-            </div>
-            <h4 className="text-xs sm:text-sm font-medium text-slate-800 truncate
-            group-hover:text-orange-600 transition-colors" title={folder.name}>{folder.name}</h4>
+        type="button"
+        onClick={() => onClick(folder)}
+        className="flex-1 flex items-center gap-2.5 sm:gap-3 min-w-0 pr-1 text-left cursor-pointer"
+      >
+        <div className="p-2 sm:p-2.5 rounded-xl bg-orange-50 text-orange-600 shrink-0 border border-orange-100">
+          <LucideFolder className="size-5 sm:size-6 fill-orange-500/20"/>
+        </div>
+        <h4 
+          className="text-xs sm:text-sm font-medium text-slate-800 truncate group-hover:text-orange-600 transition-colors" 
+          title={folder.name}
+        >
+          {folder.name}
+        </h4>
       </button>
 
       <div className="flex items-center gap-0.5">
@@ -25,19 +33,26 @@ const FolderCard = ({folder, onClick, onShare, onRename, onMove, onDelete, onTog
             onToggleStar?.(folder);
           }}
           className={`p-1.5 rounded-lg transition ${
-            folder.is_starred
+            isStarred
               ? "text-amber-500 hover:bg-amber-50"
               : "text-slate-300 hover:text-amber-500 hover:bg-slate-100 opacity-100 md:opacity-0 md:group-hover:opacity-100"
           }`}
-          title={folder.is_starred ? "Remove from Starred" : "Add to Starred"}
-          aria-label={folder.is_starred ? "Remove from Starred" : "Add to Starred"}
+          title={isStarred ? "Remove from Starred" : "Add to Starred"}
+          aria-label={isStarred ? "Remove from Starred" : "Add to Starred"}
         >
-          <StarIcon className={`size-4 ${folder.is_starred ? "fill-amber-400 text-amber-500" : ""}`} />
+          <StarIcon className={`size-4 ${isStarred ? "fill-amber-400 text-amber-500" : ""}`} />
         </button>
-        <ItemDropdown item={folder} onShare={onShare} onRename={onRename} onMove={onMove} onDelete={onDelete} onToggleStar={onToggleStar}/>
+        <ItemDropdown 
+          item={{ ...folder, is_starred: isStarred }} 
+          onShare={onShare} 
+          onRename={onRename} 
+          onMove={onMove} 
+          onDelete={onDelete} 
+          onToggleStar={onToggleStar}
+        />
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default FolderCard
+export default FolderCard;

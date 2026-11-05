@@ -1,10 +1,22 @@
 {
   "name": "drivea-monorepo",
   "version": "1.0.1",
+  "type": "module",
   "private": true,
   "scripts": {
     "start": "node server/server.js",
-    "build": "npm --prefix server install"
+    "build": "cd server && npm install"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1156.0",
+    "@aws-sdk/s3-request-presigner": "^3.1156.0",
+    "@neondatabase/serverless": "^1.2.0",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.4.0"
   }
 }
-
