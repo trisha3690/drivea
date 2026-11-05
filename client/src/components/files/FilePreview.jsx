@@ -157,7 +157,7 @@ const PdfRenderer = ({ buffer, directUrl, onMediaError }) => {
     return (
         <div className="w-full flex flex-col h-[75vh] bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm relative animate-fade-in">
             {/* Clean White PDF Controls Bar */}
-            <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs">
+            <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-slate-200 text-xs">
                 <div className="flex items-center gap-2">
                     <span className="font-medium text-slate-700">
                         {numPages > 0 ? `${numPages} Pages` : "Loading pages..."}
@@ -195,7 +195,7 @@ const PdfRenderer = ({ buffer, directUrl, onMediaError }) => {
             </div>
 
             {/* Scrollable White Canvas Pages */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50 flex flex-col items-center">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-white flex flex-col items-center">
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500 py-12">
                         <Loader2Icon className="size-8 animate-spin text-orange-600" />
@@ -536,7 +536,7 @@ const FilePreview = ({ file, onClose }) => {
                 </div>
 
                 {/* Preview Content Area */}
-                <div className="flex-1 p-3 sm:p-6 overflow-auto flex items-center justify-center bg-slate-50 min-h-60 sm:min-h-96">
+                <div className="flex-1 p-3 sm:p-6 overflow-auto flex items-center justify-center bg-white min-h-60 sm:min-h-96">
                     {isLoading ? (
                         <div className="flex flex-col items-center gap-3 text-slate-500 py-12">
                             <Loader2Icon className="size-8 animate-spin text-orange-600"/>
@@ -581,7 +581,7 @@ const FilePreview = ({ file, onClose }) => {
                     ) : fileType === "docx" ? (
                         /* Direct Word Document Inline Preview */
                         docxHtml ? (
-                            <div className="w-full flex flex-col h-[75vh] bg-slate-100/70 rounded-xl overflow-hidden border border-slate-200 shadow-sm animate-fade-in">
+                            <div className="w-full flex flex-col h-[75vh] bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm animate-fade-in">
                                 <div className="flex-1 overflow-y-auto p-4 sm:p-8">
                                     <div 
                                       className="max-w-3xl mx-auto bg-white p-6 sm:p-12 rounded-xl shadow-xs border border-slate-200 document-preview-body"
@@ -602,7 +602,7 @@ const FilePreview = ({ file, onClose }) => {
                                 </div>
                             )}
                             {fallbackSlides.length > 0 ? (
-                                <div className="w-full h-full overflow-y-auto p-4 sm:p-8 space-y-6 bg-slate-50">
+                                <div className="w-full h-full overflow-y-auto p-4 sm:p-8 space-y-6 bg-white">
                                     {fallbackSlides.map(slide => (
                                         <div key={slide.number} className="max-w-2xl mx-auto bg-white rounded-xl shadow-xs border border-slate-200 p-6 sm:p-8">
                                             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
@@ -630,7 +630,7 @@ const FilePreview = ({ file, onClose }) => {
                               src={blobUrl || directViewUrl} 
                               alt={file.name} 
                               onError={() => setMediaError(true)}
-                              className="max-h-[70vh] max-w-full object-contain rounded-xl border border-slate-200 shadow-sm"
+                              className="max-h-[70vh] max-w-full object-contain rounded-xl border border-slate-200 shadow-sm bg-white"
                             />
                         </div>
                     ) : fileType === "video" && (blobUrl || directViewUrl) ? (
@@ -639,7 +639,7 @@ const FilePreview = ({ file, onClose }) => {
                               src={blobUrl || directViewUrl} 
                               controls 
                               onError={() => setMediaError(true)}
-                              className="max-h-[70vh] max-w-full rounded-xl border border-slate-200 shadow-sm"
+                              className="max-h-[70vh] max-w-full rounded-xl border border-slate-200 shadow-sm bg-white"
                             />
                         </div>
                     ) : fileType === "audio" && (blobUrl || directViewUrl) ? (
@@ -660,19 +660,19 @@ const FilePreview = ({ file, onClose }) => {
                         />
                     ) : fileType === "text" ? (
                         textContent !== null ? (
-                            <div className="w-full flex flex-col max-h-[70vh] bg-slate-900 rounded-xl overflow-hidden shadow-sm">
-                                <div className="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-300 text-xs border-b border-slate-700">
-                                    <span className="font-mono truncate">{file.name}</span>
+                            <div className="w-full flex flex-col max-h-[70vh] bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                                <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 text-slate-700 text-xs border-b border-slate-200">
+                                    <span className="font-mono font-medium truncate">{file.name}</span>
                                     <button
                                       type="button"
                                       onClick={handleCopyText}
-                                      className="inline-flex items-center gap-1 text-[11px] text-slate-300 hover:text-white transition"
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-md text-[11px] text-slate-700 font-medium transition"
                                     >
-                                        {isCopied ? <CheckIcon className="size-3.5 text-emerald-400" /> : <CopyIcon className="size-3.5" />}
+                                        {isCopied ? <CheckIcon className="size-3.5 text-emerald-600" /> : <CopyIcon className="size-3.5" />}
                                         <span>{isCopied ? "Copied" : "Copy"}</span>
                                     </button>
                                 </div>
-                                <pre className="p-4 text-xs font-mono text-slate-100 overflow-auto whitespace-pre-wrap break-all leading-relaxed flex-1">
+                                <pre className="p-4 sm:p-6 text-xs font-mono text-slate-800 bg-white overflow-auto whitespace-pre-wrap break-all leading-relaxed flex-1">
                                     {textContent}
                                 </pre>
                             </div>
@@ -703,7 +703,7 @@ const FilePreview = ({ file, onClose }) => {
                                     {formatBytes(file.size)} • File
                                 </p>
                             </div>
-                            <p className="text-xs text-slate-500 bg-slate-50 py-2 px-3 rounded-lg border border-slate-100">
+                            <p className="text-xs text-slate-600 bg-white py-2 px-3 rounded-lg border border-slate-200">
                                 This file can be downloaded directly to your local device.
                             </p>
                             <div className="pt-2 flex items-center justify-center">
