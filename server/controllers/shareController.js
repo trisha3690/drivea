@@ -228,7 +228,9 @@ export const downloadSharedFile = async (req, res) => {
         const s3Response = await client.send(command);
 
         res.setHeader("Content-Type", file.mime_type || "application/octet-stream");
-        res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(file.name)}"`);
+        const safeFilename = file.name.replace(/["\r\n]/g, "");
+        res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}"; filename*=UTF-8''${encodeURIComponent(file.name)}`);
+        res.setHeader("Access-Control-Expose-Headers", "Content-Disposition, Content-Length, Content-Type");
         if (file.size) {
             res.setHeader("Content-Length", file.size);
         }
@@ -286,7 +288,9 @@ export const viewSharedFile = async (req, res) => {
         const s3Response = await client.send(command);
 
         res.setHeader("Content-Type", file.mime_type || "application/octet-stream");
-        res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(file.name)}"`);
+        const safeFilename = file.name.replace(/["\r\n]/g, "");
+        res.setHeader("Content-Disposition", `inline; filename="${safeFilename}"; filename*=UTF-8''${encodeURIComponent(file.name)}`);
+        res.setHeader("Access-Control-Expose-Headers", "Content-Disposition, Content-Length, Content-Type");
         if (file.size) {
             res.setHeader("Content-Length", file.size);
         }
