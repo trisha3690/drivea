@@ -58,6 +58,8 @@ const FilePreview = ({ file, onClose }) => {
     const [mediaError, setMediaError] = useState(false);
     const [textContent, setTextContent] = useState(null);
     const [docxHtml, setDocxHtml] = useState(null);
+    const [pptxBuffer, setPptxBuffer] = useState(null);
+    const [fallbackSlides, setFallbackSlides] = useState([]);
     const [isPptxRendering, setIsPptxRendering] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
     const docxContainerRef = useRef(null);
@@ -90,6 +92,8 @@ const FilePreview = ({ file, onClose }) => {
         setMediaError(false);
         setDocxHtml(null);
         setTextContent(null);
+        setPptxBuffer(null);
+        setFallbackSlides([]);
         setIsPptxRendering(false);
 
         const urls = getAuthenticatedUrls(file.id);
@@ -129,7 +133,7 @@ const FilePreview = ({ file, onClose }) => {
                     }
                 }
             } else if (fileType === "pptx") {
-                // Fetch pptx binary blob and render presentation slides
+                // Fetch pptx binary blob and store buffer for the dedicated renderer effect
                 setIsPptxRendering(true);
                 const res = await api.get(`/api/files/${file.id}/view`, { responseType: "blob" });
                 const mime = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
@@ -137,24 +141,8 @@ const FilePreview = ({ file, onClose }) => {
                 const objectUrl = URL.createObjectURL(blob);
                 setBlobUrl(objectUrl);
 
-                try {
-                    const arrayBuffer = await res.data.arrayBuffer();
-                    const { PptxViewer, RECOMMENDED_ZIP_LIMITS } = await import("@aiden0z/pptx-renderer");
-                    if (pptxContainerRef.current) {
-                        pptxContainerRef.current.innerHTML = "";
-                        const viewer = await PptxViewer.open(arrayBuffer, pptxContainerRef.current, {
-                            zipLimits: RECOMMENDED_ZIP_LIMITS,
-                            lazySlides: true,
-                            lazyMedia: true,
-                        });
-                        pptxViewerInstanceRef.current = viewer;
-                    }
-                } catch (pptxErr) {
-                    console.error("PPTX render error:", pptxErr);
-                    setMediaError(true);
-                } finally {
-                    setIsPptxRendering(false);
-                }
+                const arrayBuffer = await res.data.arrayBuffer();
+                setPptxBuffer(arrayBuffer);
             } else if (fileType === "text") {
                 const res = await api.get(`/api/files/${file.id}/view`, { responseType: "text" });
                 const text = typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2);
@@ -176,18 +164,85 @@ const FilePreview = ({ file, onClose }) => {
         }
     }, [file, fileType, getAuthenticatedUrls]);
 
+    // Dedicated effect to render PPTX once the container DOM element is guaranteed to be mounted
     useEffect(() => {
-        loadFile();
-        return () => {
-            if (blobUrl && blobUrl.startsWith("blob:")) {
-                URL.revokeObjectURL(blobUrl);
+        if (!pptxBuffer || !pptxContainerRef.current) return;
+        let active = true;
+        setIsPptxRendering(true);
+
+        (async () => {
+            try {
+                const { PptxViewer, RECOMMENDED_ZIP_LIMITS } = await import("@aiden0z/pptx-renderer");
+                if (!active || !pptxContainerRef.current) return;
+                pptxContainerRef.current.innerHTML = "";
+                const viewer = await PptxViewer.open(pptxBuffer, pptxContainerRef.current, {
+                    zipLimits: RECOMMENDED_ZIP_LIMITS,
+                });
+                if (active) {
+                    pptxViewerInstanceRef.current = viewer;
+                } else {
+                    viewer?.destroy?.();
+                }
+            } catch (err) {
+                console.warn("PptxViewer visual render failed, trying slide text extraction:", err);
+                if (!active) return;
+                try {
+                    const JSZipModule = await import("jszip");
+                    const JSZip = JSZipModule.default || JSZipModule;
+                    const zip = await JSZip.loadAsync(pptxBuffer);
+                    const slideNames = Object.keys(zip.files)
+                        .filter(name => /^ppt\/slides\/slide\d+\.xml$/.test(name))
+                        .sort((a, b) => {
+                            const numA = parseInt(a.match(/\d+/)?.[0] || "0", 10);
+                            const numB = parseInt(b.match(/\d+/)?.[0] || "0", 10);
+                            return numA - numB;
+                        });
+
+                    const slides = [];
+                    for (const sName of slideNames) {
+                        const xml = await zip.files[sName].async("text");
+                        const matches = xml.match(/<a:t[^>]*>(.*?)<\/a:t>/g) || [];
+                        const lines = matches.map(m => m.replace(/<[^>]+>/g, "").trim()).filter(Boolean);
+                        if (lines.length > 0) {
+                            slides.push({
+                                number: slides.length + 1,
+                                title: lines[0],
+                                points: lines.slice(1),
+                            });
+                        }
+                    }
+                    if (slides.length > 0) {
+                        setFallbackSlides(slides);
+                    } else {
+                        setMediaError(true);
+                    }
+                } catch (fallbackErr) {
+                    console.error("PPTX fallback extraction failed:", fallbackErr);
+                    setMediaError(true);
+                }
+            } finally {
+                if (active) setIsPptxRendering(false);
             }
+        })();
+
+        return () => {
+            active = false;
             if (pptxViewerInstanceRef.current?.destroy) {
                 try {
                     pptxViewerInstanceRef.current.destroy();
                 } catch (e) {
                     // ignore
                 }
+                pptxViewerInstanceRef.current = null;
+            }
+        };
+    }, [pptxBuffer]);
+
+    useEffect(() => {
+        loadFile();
+        return () => {
+            if (blobUrl && blobUrl.startsWith("blob:")) {
+                URL.revokeObjectURL(blobUrl);
             }
         };
     }, [file]);
@@ -360,19 +415,36 @@ const FilePreview = ({ file, onClose }) => {
                         )
                     ) : fileType === "pptx" ? (
                         /* Direct PowerPoint Presentation Inline Preview */
-                        isPptxRendering ? (
-                            <div className="flex flex-col items-center gap-3 text-slate-500 py-12">
-                                <Loader2Icon className="size-8 animate-spin text-orange-600"/>
-                                <p className="text-sm font-medium">Loading presentation slides...</p>
-                            </div>
-                        ) : (
-                            <div className="w-full flex flex-col h-[75vh] bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-sm animate-fade-in">
+                        <div className="w-full flex flex-col h-[75vh] bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-sm relative animate-fade-in">
+                            {isPptxRendering && (
+                                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-slate-300 bg-slate-900/85 backdrop-blur-xs">
+                                    <Loader2Icon className="size-8 animate-spin text-orange-600"/>
+                                    <p className="text-sm font-medium">Loading presentation slides...</p>
+                                </div>
+                            )}
+                            {fallbackSlides.length > 0 ? (
+                                <div className="w-full h-full overflow-y-auto p-4 sm:p-8 space-y-6 bg-slate-100">
+                                    {fallbackSlides.map(slide => (
+                                        <div key={slide.number} className="max-w-2xl mx-auto bg-white rounded-xl shadow-xs border border-slate-200 p-6 sm:p-8">
+                                            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                                                <span className="text-xs font-semibold uppercase tracking-wider text-orange-600">Slide {slide.number}</span>
+                                            </div>
+                                            <h3 className="text-lg font-bold text-slate-900 mb-4">{slide.title}</h3>
+                                            <ul className="space-y-2 text-sm text-slate-700 list-disc list-inside">
+                                                {slide.points.map((pt, idx) => (
+                                                    <li key={idx} className="leading-relaxed">{pt}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
                                 <div 
                                   ref={pptxContainerRef} 
-                                  className="w-full h-full overflow-auto flex items-center justify-center p-2 sm:p-4 pptx-preview-container" 
+                                  className="w-full h-full overflow-auto p-4 pptx-preview-container" 
                                 />
-                            </div>
-                        )
+                            )}
+                        </div>
                     ) : fileType === "image" && (blobUrl || directViewUrl) ? (
                         <div className="flex items-center justify-center w-full h-full">
                             <img 
