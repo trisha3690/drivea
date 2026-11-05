@@ -17,6 +17,7 @@
     "docx-preview": "^0.4.1",
     "lucide-react": "^1.48.0",
     "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.5.438",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-dropzone": "^20.1.2",
