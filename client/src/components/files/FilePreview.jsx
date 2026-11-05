@@ -224,7 +224,7 @@ const FilePreview = ({ file, onClose }) => {
                     </div>
 
                     <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                        {/* Download to Device Button */}
+                        {/* Single Consistent Download Button */}
                         <button
                           type="button"
                           onClick={handleDownload}
@@ -298,25 +298,10 @@ const FilePreview = ({ file, onClose }) => {
                             </div>
                         </div>
                     ) : fileType === "docx" ? (
-                        /* Direct Word Document Inline Preview */
+                        /* Direct Word Document Inline Preview - clean reading view with single top download button */
                         docxHtml ? (
-                            <div className="w-full flex flex-col h-[75vh] bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm animate-fade-in">
-                                <div className="flex items-center justify-between px-4 py-2.5 bg-slate-100 border-b border-slate-200 text-xs text-slate-600">
-                                    <span className="font-medium truncate flex items-center gap-2">
-                                        <FileTextIcon className="size-4 text-orange-600" />
-                                        Document Preview • {file.name}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={handleDownload}
-                                      disabled={isDownloading}
-                                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition shadow-xs"
-                                    >
-                                        <DownloadIcon className="size-3.5" />
-                                        <span>{isDownloading ? "Downloading..." : "Download to Device"}</span>
-                                    </button>
-                                </div>
-                                <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100/70">
+                            <div className="w-full flex flex-col h-[75vh] bg-slate-100/70 rounded-xl overflow-hidden border border-slate-200 shadow-sm animate-fade-in">
+                                <div className="flex-1 overflow-y-auto p-4 sm:p-8">
                                     <div 
                                       className="max-w-3xl mx-auto bg-white p-6 sm:p-12 rounded-xl shadow-xs border border-slate-200 document-preview-body"
                                       dangerouslySetInnerHTML={{ __html: docxHtml }}
@@ -392,7 +377,7 @@ const FilePreview = ({ file, onClose }) => {
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition"
                                 >
                                     <DownloadIcon className="size-3.5" />
-                                    <span>Download File</span>
+                                    <span>Download</span>
                                 </button>
                             </div>
                         )
@@ -423,7 +408,7 @@ const FilePreview = ({ file, onClose }) => {
                                     ) : (
                                         <DownloadIcon className="size-4" />
                                     )}
-                                    <span>{isDownloading ? "Downloading..." : "Download to Device"}</span>
+                                    <span>{isDownloading ? "Downloading..." : "Download"}</span>
                                 </button>
                             </div>
                         </div>
