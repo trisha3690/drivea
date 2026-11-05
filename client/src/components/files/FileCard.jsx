@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { formatBytes, getFileIcon } from '../../assets/assets';
 import { ItemDropdown } from '../ui/ItemDropdown';
 import { format } from 'date-fns';
@@ -7,13 +7,18 @@ import { isItemStarredLocal } from '../../utils/starredStorage';
 
 const FileCard = ({ file, onPreview, onShare, onRename, onMove, onDelete, onToggleStar }) => {
   const isStarred = isItemStarredLocal(file);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleCardClick = (e) => {
-    // 1. Ghost click shield: ignore delayed synthetic clicks from mobile touches on actions/dropdowns
-    if (typeof window !== "undefined" && Date.now() - (window.__lastDropdownActionTime || 0) < 650) {
+    // 1. If dropdown menu is open, ignore clicks on card
+    if (isMenuOpen) {
       return;
     }
-    // 2. Ignore clicks if initiated from any interactive child (buttons, dropdowns, actions)
+    // 2. Ghost click shield: ignore delayed synthetic clicks from mobile touches on actions/dropdowns
+    if (typeof window !== "undefined" && Date.now() - (window.__lastDropdownActionTime || 0) < 600) {
+      return;
+    }
+    // 3. Ignore clicks if initiated from any interactive child (buttons, dropdowns, actions)
     if (e.target.closest('[data-card-action]') || e.target.closest('button')) {
       return;
     }
@@ -23,9 +28,10 @@ const FileCard = ({ file, onPreview, onShare, onRename, onMove, onDelete, onTogg
   return (
     <div 
       onClick={handleCardClick}
-      className='group relative bg-white border border-slate-200
+      data-dropdown-open={isMenuOpen ? "true" : undefined}
+      className={`group relative ${isMenuOpen ? "z-30" : "z-0"} bg-white border border-slate-200
       hover:border-orange-200 rounded-2xl p-3.5 sm:p-4 transition-all duration-200
-      cursor-pointer flex flex-col justify-between active:scale-[0.99] shadow-xs'
+      cursor-pointer flex flex-col justify-between active:scale-[0.99] shadow-xs`}
     >
       <div className='flex items-start justify-between gap-2 mb-2.5 sm:mb-3'>
         <div className='p-2 sm:p-2.5 rounded-xl bg-slate-50 border border-slate-100 shrink-0 pointer-events-none'>
@@ -64,6 +70,7 @@ const FileCard = ({ file, onPreview, onShare, onRename, onMove, onDelete, onTogg
             onMove={onMove} 
             onDelete={onDelete} 
             onToggleStar={onToggleStar}
+            onOpenChange={setIsMenuOpen}
           />
         </div>
       </div>
