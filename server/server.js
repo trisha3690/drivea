@@ -73,10 +73,10 @@ app.use("/api/shares", shareRouter);
 app.use("/api/starred", starredRouter);
 
 // SPA fallback for all frontend client-side routes (non-API)
-app.get("*", (req, res, next) => {
-  if (req.path.startsWith("/api")) return next();
+app.use((req, res, next) => {
+  if (req.method !== "GET" || req.path.startsWith("/api")) return next();
   res.sendFile(path.join(clientDistPath, "index.html"), (err) => {
-    if (err) res.send("Server is Running");
+    if (err) res.status(200).send("Server is Running");
   });
 });
 
