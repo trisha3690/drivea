@@ -1,4 +1,5 @@
 const STARRED_KEY = "drivea_starred_ids";
+const UNSTARRED_KEY = "drivea_unstarred_ids";
 
 export const getLocalStarredIds = () => {
   try {
@@ -9,25 +10,39 @@ export const getLocalStarredIds = () => {
   }
 };
 
+export const getLocalUnstarredIds = () => {
+  try {
+    const raw = typeof window !== "undefined" ? localStorage.getItem(UNSTARRED_KEY) : null;
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
 export const isItemStarredLocal = (item) => {
   if (!item) return false;
+  const unstarredIds = getLocalUnstarredIds();
+  if (unstarredIds.includes(item.id)) return false;
   if (item.is_starred === true) return true;
-  const ids = getLocalStarredIds();
-  return ids.includes(item.id);
+  const starredIds = getLocalStarredIds();
+  return starredIds.includes(item.id);
 };
 
 export const toggleLocalStarredId = (itemId, willBeStarred) => {
   if (!itemId) return;
   try {
-    const ids = new Set(getLocalStarredIds());
+    const starredIds = new Set(getLocalStarredIds());
+    const unstarredIds = new Set(getLocalUnstarredIds());
     if (willBeStarred) {
-      ids.add(itemId);
+      starredIds.add(itemId);
+      unstarredIds.delete(itemId);
     } else {
-      ids.delete(itemId);
+      starredIds.delete(itemId);
+      unstarredIds.add(itemId);
     }
-    localStorage.setItem(STARRED_KEY, JSON.stringify([...ids]));
+    localStorage.setItem(STARRED_KEY, JSON.stringify([...starredIds]));
+    localStorage.setItem(UNSTARRED_KEY, JSON.stringify([...unstarredIds]));
   } catch (e) {
     console.warn("Could not save to localStorage", e);
   }
 };
-

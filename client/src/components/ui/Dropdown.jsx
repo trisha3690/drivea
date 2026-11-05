@@ -20,18 +20,21 @@ export function Dropdown({ trigger, children, align = "right", position = "botto
 
     const alignStyle = align === "right" ? "right-0" : "left-0";
     const posStyle = position === "top" ? "bottom-full mb-2" : "top-full mt-2";
+    const hasElementTrigger = React.isValidElement(trigger);
 
     const handleToggle = (e) => {
         e?.stopPropagation();
         setIsOpen((prev) => !prev);
     };
 
-    const triggerElement = React.isValidElement(trigger)
+    const triggerElement = hasElementTrigger
         ? React.cloneElement(trigger, {
             onClick: (e) => {
                 trigger.props.onClick?.(e);
                 handleToggle(e);
             },
+            "aria-haspopup": "menu",
+            "aria-expanded": isOpen,
         })
         : trigger;
 
@@ -39,11 +42,15 @@ export function Dropdown({ trigger, children, align = "right", position = "botto
         <div 
             className="relative inline-block text-left" 
             ref={dropdownRef} 
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+                if (hasElementTrigger) {
+                    e.stopPropagation();
+                } else {
+                    handleToggle(e);
+                }
+            }}
         >
-            <div onClick={handleToggle} className="cursor-pointer">
-                {triggerElement}
-            </div>
+            {triggerElement}
 
             {isOpen && (
                 <div

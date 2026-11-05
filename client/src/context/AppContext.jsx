@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import api from "../config/api";
-import { getLocalStarredIds } from "../utils/starredStorage";
+import { getLocalStarredIds, getLocalUnstarredIds } from "../utils/starredStorage";
 
 const AppContext = createContext();
 
@@ -98,20 +98,31 @@ export const AppProvider = ({ children }) => {
                 ]);
 
                 const starredIds = new Set(getLocalStarredIds());
+                const unstarredIds = new Set(getLocalUnstarredIds());
                 const rawFolders = folderRes.data.folders || [];
                 const rawFiles = fileRes.data.files || [];
 
-                const mappedFolders = rawFolders.map((f) => ({
-                    ...f,
-                    item_type: "folder",
-                    is_starred: !!f.is_starred || starredIds.has(f.id),
-                }));
+                const mappedFolders = rawFolders.map((f) => {
+                    let isStarred = !!f.is_starred;
+                    if (unstarredIds.has(f.id)) isStarred = false;
+                    else if (starredIds.has(f.id)) isStarred = true;
+                    return {
+                        ...f,
+                        item_type: "folder",
+                        is_starred: isStarred,
+                    };
+                });
 
-                const mappedFiles = rawFiles.map((f) => ({
-                    ...f,
-                    item_type: "file",
-                    is_starred: !!f.is_starred || starredIds.has(f.id),
-                }));
+                const mappedFiles = rawFiles.map((f) => {
+                    let isStarred = !!f.is_starred;
+                    if (unstarredIds.has(f.id)) isStarred = false;
+                    else if (starredIds.has(f.id)) isStarred = true;
+                    return {
+                        ...f,
+                        item_type: "file",
+                        is_starred: isStarred,
+                    };
+                });
 
                 setFolders(mappedFolders);
                 setFiles(mappedFiles);

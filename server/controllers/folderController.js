@@ -256,7 +256,7 @@ export const toggleStarFolder = async (req, res) => {
             return res.status(404).json({ error: "Folder not found." });
         }
 
-        const newStarred = !folder.is_starred;
+        const newStarred = !Boolean(folder.is_starred);
         const [updated] = await sql`
         UPDATE folders 
         SET is_starred = ${newStarred}, updated_at = NOW() 
