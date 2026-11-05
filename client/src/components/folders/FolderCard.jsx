@@ -1,13 +1,18 @@
 import { LucideFolder, StarIcon } from 'lucide-react';
-import React from 'react';
+import React, { useState } from 'react';
 import { ItemDropdown } from '../ui/ItemDropdown';
 import { isItemStarredLocal } from '../../utils/starredStorage';
 
 const FolderCard = ({ folder, onClick, onShare, onRename, onMove, onDelete, onToggleStar }) => {
   const isStarred = isItemStarredLocal(folder);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleFolderClick = (e) => {
-    if (typeof window !== "undefined" && Date.now() - (window.__lastDropdownActionTime || 0) < 650) {
+    if (isMenuOpen) {
+      e?.stopPropagation();
+      return;
+    }
+    if (typeof window !== "undefined" && Date.now() - (window.__lastDropdownActionTime || 0) < 600) {
       e?.stopPropagation();
       return;
     }
@@ -18,8 +23,11 @@ const FolderCard = ({ folder, onClick, onShare, onRename, onMove, onDelete, onTo
   };
 
   return (
-    <div className="group relative bg-white border border-slate-200 hover:border-orange-200 rounded-2xl
-    p-3.5 sm:p-4 transition-all duration-200 flex items-center justify-between gap-2 shadow-xs">
+    <div 
+      data-dropdown-open={isMenuOpen ? "true" : undefined}
+      className={`group relative ${isMenuOpen ? "z-30" : "z-0"} bg-white border border-slate-200 hover:border-orange-200 rounded-2xl
+      p-3.5 sm:p-4 transition-all duration-200 flex items-center justify-between gap-2 shadow-xs`}
+    >
       <button
         type="button"
         onClick={handleFolderClick}
@@ -68,6 +76,7 @@ const FolderCard = ({ folder, onClick, onShare, onRename, onMove, onDelete, onTo
           onMove={onMove} 
           onDelete={onDelete} 
           onToggleStar={onToggleStar}
+          onOpenChange={setIsMenuOpen}
         />
       </div>
     </div>
