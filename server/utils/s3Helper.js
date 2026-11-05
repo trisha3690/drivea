@@ -9,7 +9,7 @@ export const uploadToStorage = async (fileBuffer, key, mimeType) => {
         Bucket: BUCKET_NAME,
         Key: key,
         Body: fileBuffer,
-        ContentType: mimeType
+        ContentType: mimeType || "application/octet-stream"
     });
     await client.send(command)
     return {s3Key: key};

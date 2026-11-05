@@ -25,7 +25,7 @@ export const uploadFiles = async (req, res) => {
         const folderId = req.body.folder_id || req.body.folderId;
         let targetFolderId = null;
 
-        if(folderId && folderId !== "null" && folderId !== "root"){
+        if(folderId && folderId !== "null" && folderId !== "root" && folderId !== "undefined"){
             const [folder] = await sql`
             SELECT id FROM folders
             WHERE id = ${folderId} AND owner_id = ${req.user.id} AND is_trashed = false
@@ -40,21 +40,23 @@ export const uploadFiles = async (req, res) => {
 
         if(Number(req.user.storage_used) + totalNewBytes > Number(req.user.storage_limit)){
             const limitGb = (Number(req.user.storage_limit) / (1024 * 1024 * 1024)).toFixed(1);
-            return res.status(400).json({ error: `Upload exceeds storage quota limit of $
-            {limitGb} GB.` });
+            return res.status(400).json({ error: `Upload exceeds storage quota limit of ${limitGb} GB.` });
         }
 
         // Stream buffers to storage and record in database in parallel
         const createdFiles = await Promise.all(
-            req.files.map(async (multerFile)=>{
-                const fileExt = path.extname(multerFile.originalname);
+            req.files.map(async (multerFile) => {
+                const originalName = multerFile.originalname || `upload_${Date.now()}`;
+                const fileExt = path.extname(originalName) || "";
+                const mimeType = multerFile.mimetype || "application/octet-stream";
                 const randomString = crypto.randomBytes(8).toString("hex");
-                const s3Key = `users/${req.user.id}/${Date.now()}_${randomString}${fileExt}`
-                await uploadToStorage(multerFile.buffer, s3Key, multerFile.mimetype)
+                const s3Key = `users/${req.user.id}/${Date.now()}_${randomString}${fileExt}`;
+
+                await uploadToStorage(multerFile.buffer, s3Key, mimeType);
 
                 const [row] = await sql`
                 INSERT INTO files (name, original_name, mime_type, size, s3_key, folder_id, owner_id)
-                VALUES (${multerFile.originalname}, ${multerFile.originalname}, ${multerFile.mimetype},
+                VALUES (${originalName}, ${originalName}, ${mimeType},
                 ${multerFile.size}, ${s3Key}, ${targetFolderId}, ${req.user.id}) RETURNING *
                 `;
                 return row;

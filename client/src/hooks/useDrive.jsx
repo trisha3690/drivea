@@ -21,41 +21,46 @@ export function useDrive(){
      }
   }
 
-  //File Upload with simulated progress
+  // File Upload with real progress tracking and boundary-safe multipart form data
   const uploadFiles = async (fileList, folder_id = currentFolderId) => {
-    if (!fileList?.length) return;
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
     setIsUploading(true);
     setUploadProgress(0);
 
-    const totalSize = Array.from(fileList).reduce((acc, f)=> acc + (f.size || 0), 0)
-    const step = 92 / Math.max(12, totalSize / 409715.2);
-    const interval = setInterval(()=>{
-        setUploadProgress((p)=>(p >= 92 ? p : Math.min(92, p + step)))
-    },100)
-
     const formData = new FormData();
-    Array.from(fileList).forEach((f)=>formData.append("files",f));
-    if(folder_id) formData.append("folder_id", folder_id)
+    files.forEach((f) => formData.append("files", f));
+    if (folder_id && folder_id !== "null" && folder_id !== "root" && folder_id !== "undefined") {
+      formData.append("folder_id", folder_id);
+    }
 
-        try {
-            const {data} = await api.post("/api/files/upload", formData, {
-                headers: { "Content-Type": "multipart/form-data"},
-            });
-            clearInterval(interval);
-            setUploadProgress(100);
-            await new Promise((r)=>setTimeout(r, 300))
-            toast.success(`${data.files.length} files(s) uploaded successfully`);
-            await fetchDriveContent(folder_id);
-            await refreshUser();
-        } catch (err) {
-            clearInterval(interval);
-            toast.error(err.response?.data?.error || "File upload failed");
-        } finally {
-            clearInterval(interval);
-            setIsUploading(false);
-            setUploadProgress(0);
-        }
-  }
+    try {
+      const { data } = await api.post("/api/files/upload", formData, {
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(Math.min(99, percent));
+          }
+        },
+      });
+      setUploadProgress(100);
+      await new Promise((r) => setTimeout(r, 300));
+      toast.success(`${data.files?.length || 1} file(s) uploaded successfully`);
+      await fetchDriveContent(folder_id);
+      await refreshUser();
+    } catch (err) {
+      console.error("Upload error:", err);
+      const errorMessage =
+        err.response?.data?.error ||
+        (err.message === "Network Error"
+          ? "Network error: check connection or file size"
+          : "File upload failed");
+      toast.error(errorMessage);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
 
   //Create Folder
 
