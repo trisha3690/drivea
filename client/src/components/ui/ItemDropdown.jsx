@@ -10,7 +10,7 @@ export function ItemDropdown({ item, onPreview, onShare, onRename, onMove, onDel
             trigger={
                 <button
                     type="button"
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                    className="p-2 sm:p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer touch-manipulation select-none"
                     aria-label="Item actions"
                     title="More options"
                 >
