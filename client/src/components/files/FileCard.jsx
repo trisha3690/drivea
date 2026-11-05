@@ -8,22 +8,42 @@ import { isItemStarredLocal } from '../../utils/starredStorage';
 const FileCard = ({ file, onPreview, onShare, onRename, onMove, onDelete, onToggleStar }) => {
   const isStarred = isItemStarredLocal(file);
 
+  const handleCardClick = (e) => {
+    // 1. Ghost click shield: ignore delayed synthetic clicks from mobile touches on actions/dropdowns
+    if (typeof window !== "undefined" && Date.now() - (window.__lastDropdownActionTime || 0) < 650) {
+      return;
+    }
+    // 2. Ignore clicks if initiated from any interactive child (buttons, dropdowns, actions)
+    if (e.target.closest('[data-card-action]') || e.target.closest('button')) {
+      return;
+    }
+    onPreview?.(file);
+  };
+
   return (
     <div 
-      onClick={() => onPreview?.(file)}
+      onClick={handleCardClick}
       className='group relative bg-white border border-slate-200
       hover:border-orange-200 rounded-2xl p-3.5 sm:p-4 transition-all duration-200
       cursor-pointer flex flex-col justify-between active:scale-[0.99] shadow-xs'
     >
       <div className='flex items-start justify-between gap-2 mb-2.5 sm:mb-3'>
-        <div className='p-2 sm:p-2.5 rounded-xl bg-slate-50 border border-slate-100 shrink-0'>
+        <div className='p-2 sm:p-2.5 rounded-xl bg-slate-50 border border-slate-100 shrink-0 pointer-events-none'>
           {getFileIcon(file.mime_type, "size-5 sm:size-6")}
         </div>
-        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="flex items-center gap-1" 
+          data-card-action="true" 
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
             type="button"
+            data-card-action="true"
             onClick={(e) => {
               e.stopPropagation();
+              if (typeof window !== "undefined") {
+                window.__lastDropdownActionTime = Date.now();
+              }
               onToggleStar?.(file);
             }}
             className={`p-2 sm:p-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation ${
@@ -34,7 +54,7 @@ const FileCard = ({ file, onPreview, onShare, onRename, onMove, onDelete, onTogg
             title={isStarred ? "Remove from Starred" : "Add to Starred"}
             aria-label={isStarred ? "Remove from Starred" : "Add to Starred"}
           >
-            <StarIcon className={`size-4 ${isStarred ? "fill-amber-400 text-amber-500" : ""}`} />
+            <StarIcon className={`size-4 pointer-events-none ${isStarred ? "fill-amber-400 text-amber-500" : ""}`} />
           </button>
           <ItemDropdown 
             item={{ ...file, is_starred: isStarred }} 
@@ -48,7 +68,7 @@ const FileCard = ({ file, onPreview, onShare, onRename, onMove, onDelete, onTogg
         </div>
       </div>
 
-      <div>
+      <div className="pointer-events-none">
         <h4 
           className='text-xs sm:text-sm font-medium text-slate-800 truncate group-hover:text-orange-700 transition-colors' 
           title={file.name}
