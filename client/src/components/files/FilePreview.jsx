@@ -61,7 +61,7 @@ const PdfPage = ({ pageNum, pdfDoc, scale }) => {
         let active = true;
         if (!pdfDoc) return;
 
-        const renderPage = async () => {
+        const renderPage = async (dprOverride) => {
             try {
                 setIsPageLoading(true);
                 setPageError(false);
@@ -77,20 +77,17 @@ const PdfPage = ({ pageNum, pdfDoc, scale }) => {
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return;
 
-                const dpr = Math.min(window.devicePixelRatio || 1, 2);
-                const viewport = page.getViewport({ scale });
+                const effectiveDpr = dprOverride !== undefined ? dprOverride : Math.min(window.devicePixelRatio || 1, 2);
+                const viewport = page.getViewport({ scale: scale * effectiveDpr });
 
-                canvas.width = Math.floor(viewport.width * dpr);
-                canvas.height = Math.floor(viewport.height * dpr);
-                canvas.style.width = `${Math.floor(viewport.width)}px`;
-                canvas.style.height = `${Math.floor(viewport.height)}px`;
+                canvas.width = Math.floor(viewport.width);
+                canvas.height = Math.floor(viewport.height);
+                canvas.style.width = `${Math.floor(viewport.width / effectiveDpr)}px`;
+                canvas.style.height = `${Math.floor(viewport.height / effectiveDpr)}px`;
 
-                ctx.save();
-                ctx.scale(dpr, dpr);
-
-                // Ensure solid white background on mobile
+                // Solid white background
                 ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, viewport.width, viewport.height);
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 const renderContext = {
                     canvasContext: ctx,
@@ -100,14 +97,23 @@ const PdfPage = ({ pageNum, pdfDoc, scale }) => {
                 const task = page.render(renderContext);
                 renderTaskRef.current = task;
                 await task.promise;
-                ctx.restore();
 
                 if (active) setIsPageLoading(false);
             } catch (err) {
-                if (err?.name !== 'RenderingCancelledException') {
-                    console.warn(`Error rendering page ${pageNum}:`, err);
-                    if (active) setPageError(true);
+                if (err?.name === 'RenderingCancelledException') {
+                    return;
                 }
+                console.warn(`Error rendering page ${pageNum}:`, err);
+                // If high DPR failed on mobile, retry at 1x scale
+                if (dprOverride === undefined && (window.devicePixelRatio || 1) > 1) {
+                    try {
+                        await renderPage(1);
+                        return;
+                    } catch (retryErr) {
+                        console.warn(`Retry at 1x also failed for page ${pageNum}:`, retryErr);
+                    }
+                }
+                if (active) setPageError(true);
             } finally {
                 if (active) setIsPageLoading(false);
             }
@@ -163,8 +169,13 @@ const PdfRenderer = ({ buffer, directUrl, onMediaError }) => {
         (async () => {
             try {
                 const pdfjsLib = await import('pdfjs-dist');
-                const pdfWorker = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
-                pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+                let workerSrc;
+                try {
+                    workerSrc = (await import('pdfjs-dist/build/pdf.worker.min.js?url')).default;
+                } catch {
+                    workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '3.11.174'}/pdf.worker.min.js`;
+                }
+                pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
                 const input = buffer ? { data: new Uint8Array(buffer) } : { url: directUrl };
                 const loadingTask = pdfjsLib.getDocument(input);
