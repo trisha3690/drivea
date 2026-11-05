@@ -21,28 +21,80 @@ export function useDrive(){
      }
   }
 
-  // File Upload with real progress tracking and boundary-safe multipart form data
+  // File Upload with real XHR progress and 100MB limit check
   const uploadFiles = async (fileList, folder_id = currentFolderId) => {
     const files = Array.from(fileList || []);
     if (!files.length) return;
+
+    // Client-side 100MB per file check
+    const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
+    const oversizedFile = files.find((f) => f.size > MAX_FILE_SIZE);
+    if (oversizedFile) {
+      const sizeMb = (oversizedFile.size / (1024 * 1024)).toFixed(1);
+      toast.error(`"${oversizedFile.name}" (${sizeMb} MB) exceeds the 100 MB upload limit.`);
+      return;
+    }
+
     setIsUploading(true);
     setUploadProgress(0);
 
-    const formData = new FormData();
-    files.forEach((f) => formData.append("files", f));
-    if (folder_id && folder_id !== "null" && folder_id !== "root" && folder_id !== "undefined") {
-      formData.append("folder_id", folder_id);
-    }
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const baseURL = api.defaults.baseURL || "https://drivea-bjn0.onrender.com";
 
     try {
-      const { data } = await api.post("/api/files/upload", formData, {
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+      const data = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `${baseURL}/api/files/upload`);
+        if (token) {
+          xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+        }
+        xhr.withCredentials = true;
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.round((event.loaded * 100) / event.total);
             setUploadProgress(Math.min(99, percent));
           }
-        },
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              resolve(JSON.parse(xhr.responseText));
+            } catch {
+              resolve({ files: [] });
+            }
+          } else {
+            try {
+              const resData = JSON.parse(xhr.responseText);
+              reject(new Error(resData.error || `Upload failed with status ${xhr.status}`));
+            } catch {
+              if (xhr.status === 413) {
+                reject(new Error("File size exceeds the 100 MB limit."));
+              } else {
+                reject(new Error(`Upload failed with status ${xhr.status}`));
+              }
+            }
+          }
+        };
+
+        xhr.onerror = () => {
+          reject(new Error("Upload connection failed. Check your internet connection or try a smaller file."));
+        };
+
+        xhr.ontimeout = () => {
+          reject(new Error("Upload timed out."));
+        };
+
+        const formData = new FormData();
+        files.forEach((f) => formData.append("files", f));
+        if (folder_id && folder_id !== "null" && folder_id !== "root" && folder_id !== "undefined") {
+          formData.append("folder_id", folder_id);
+        }
+
+        xhr.send(formData);
       });
+
       setUploadProgress(100);
       await new Promise((r) => setTimeout(r, 300));
       toast.success(`${data.files?.length || 1} file(s) uploaded successfully`);
@@ -50,12 +102,7 @@ export function useDrive(){
       await refreshUser();
     } catch (err) {
       console.error("Upload error:", err);
-      const errorMessage =
-        err.response?.data?.error ||
-        (err.message === "Network Error"
-          ? "Network error: check connection or file size"
-          : "File upload failed");
-      toast.error(errorMessage);
+      toast.error(err.message || "File upload failed");
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
