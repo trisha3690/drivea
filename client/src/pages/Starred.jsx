@@ -26,6 +26,46 @@ const Starred = () => {
   const [moveItem, setMoveItem] = useState(null);
   const [deleteItem, setDeleteItem] = useState(null);
 
+  const handleOpenPreview = (file) => {
+    setShareItem(null);
+    setRenameItem(null);
+    setMoveItem(null);
+    setDeleteItem(null);
+    setPreviewFile(file);
+  };
+
+  const handleOpenShare = (item) => {
+    setPreviewFile(null);
+    setRenameItem(null);
+    setMoveItem(null);
+    setDeleteItem(null);
+    setShareItem(item);
+  };
+
+  const handleOpenRename = (item) => {
+    setPreviewFile(null);
+    setShareItem(null);
+    setMoveItem(null);
+    setDeleteItem(null);
+    setRenameItem(item);
+  };
+
+  const handleOpenMove = (item) => {
+    setPreviewFile(null);
+    setShareItem(null);
+    setRenameItem(null);
+    setDeleteItem(null);
+    setMoveItem(item);
+  };
+
+  const handleOpenDelete = (item) => {
+    setPreviewFile(null);
+    setShareItem(null);
+    setRenameItem(null);
+    setMoveItem(null);
+    setDeleteItem(item);
+  };
+
   const fetchStarred = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -144,11 +184,11 @@ const Starred = () => {
         emptyTitle="No starred items"
         emptyDescription="Star important files and folders to easily find them here later."
         onFolderClick={(folder) => navigate(`/drive/${folder.id}`)}
-        onPreviewFile={setPreviewFile}
-        onShareItem={setShareItem}
-        onRenameItem={setRenameItem}
-        onMoveItem={setMoveItem}
-        onDeleteItem={setDeleteItem}
+        onPreviewFile={handleOpenPreview}
+        onShareItem={handleOpenShare}
+        onRenameItem={handleOpenRename}
+        onMoveItem={handleOpenMove}
+        onDeleteItem={handleOpenDelete}
         onToggleStarItem={handleToggleStar}
       />
 
