@@ -1,7 +1,13 @@
 import axios from "axios";
 
+export const API_BASE_URL = (
+    import.meta.env.VITE_BASE_URL && import.meta.env.VITE_BASE_URL !== "/"
+        ? import.meta.env.VITE_BASE_URL
+        : "https://drivea-bjn0.onrender.com"
+).replace(/\/+$/, "");
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_BASE_URL || "https://drivea-bjn0.onrender.com",
+    baseURL: API_BASE_URL,
     withCredentials: true,
 });
 
