@@ -2,6 +2,8 @@ import express from "express";
 import "dotenv/config";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import path from "path";
+import { fileURLToPath } from "url";
 import { initDB } from "./config/db.js";
 import authRouter from "./routes/authRoutes.js";
 import folderRouter from "./routes/folderRoutes.js";
@@ -9,6 +11,10 @@ import fileRouter from "./routes/fileRoutes.js";
 import trashRouter from "./routes/trashRoutes.js";
 import shareRouter from "./routes/shareRoutes.js";
 import starredRouter from "./routes/starredRoutes.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const clientDistPath = path.join(__dirname, "../client/dist");
 
 const app = express();
 
@@ -52,8 +58,11 @@ app.use(cookieParser());
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
-// Root API
-app.get("/", (_req, res) => res.send("Server is Running"));
+// Serve frontend static build files
+app.use(express.static(clientDistPath));
+
+// Root API Health Check
+app.get("/api/health", (_req, res) => res.json({ status: "ok", message: "Server is Running" }));
 
 // App API routes
 app.use("/api/auth", authRouter);
@@ -62,6 +71,14 @@ app.use("/api/files", fileRouter);
 app.use("/api/trash", trashRouter);
 app.use("/api/shares", shareRouter);
 app.use("/api/starred", starredRouter);
+
+// SPA fallback for all frontend client-side routes (non-API)
+app.get("*", (req, res, next) => {
+  if (req.path.startsWith("/api")) return next();
+  res.sendFile(path.join(clientDistPath, "index.html"), (err) => {
+    if (err) res.send("Server is Running");
+  });
+});
 
 // Error Handling Middleware
 app.use((err, _req, res, _next) => {
