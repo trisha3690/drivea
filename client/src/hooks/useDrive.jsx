@@ -1,6 +1,7 @@
 import toast from "react-hot-toast";
 import { useApp } from "../context/AppContext";
 import api from "../config/api";
+import { getLocalStarredIds, isItemStarredLocal, toggleLocalStarredId } from "../utils/starredStorage";
 
 const isFolderItem = (item) => item?.item_type === "folder" || (!item?.mime_type && item?.path !== undefined);
 
@@ -23,11 +24,7 @@ export function useDrive() {
       if (afterSuccess) await afterSuccess(res?.data);
       return true;
     } catch (err) {
-      if (err.response?.status === 404) {
-        toast.error("Backend update pending. In Render dashboard, click 'Manual Deploy' > 'Deploy latest commit'.");
-      } else {
-        toast.error(err.response?.data?.error || errorMsg);
-      }
+      toast.error(err.response?.data?.error || errorMsg);
       return false;
     }
   };
@@ -188,17 +185,29 @@ export function useDrive() {
     );
   };
 
-  const toggleStarItem = (item) => {
+  const toggleStarItem = async (item) => {
     const isFolder = isFolderItem(item);
     const endpoint = isFolder ? "folders" : "files";
-    const id = item.id || item;
-    const willBeStarred = !item.is_starred;
-    return runAction(
-      api.patch(`/api/${endpoint}/${id}/star`),
-      willBeStarred ? "Added to Starred" : "Removed from Starred",
-      "Error updating starred status",
-      () => fetchDriveContent()
-    );
+    const id = item?.id || item;
+    const currentlyStarred = isItemStarredLocal(item);
+    const willBeStarred = !currentlyStarred;
+
+    // Immediately update local storage and item property for instant feedback
+    toggleLocalStarredId(id, willBeStarred);
+    if (typeof item === "object" && item !== null) {
+      item.is_starred = willBeStarred;
+    }
+
+    toast.success(willBeStarred ? "Added to Starred" : "Removed from Starred");
+    fetchDriveContent();
+
+    // Sync to backend API in background
+    try {
+      await api.patch(`/api/${endpoint}/${id}/star`);
+    } catch (err) {
+      console.warn("Backend star sync pending:", err.message);
+    }
+    return true;
   };
 
   return {

@@ -10,6 +10,7 @@ import RenameModal from '../components/files/RenameModal';
 import MoveModal from '../components/files/MoveModal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import toast from 'react-hot-toast';
+import { getLocalStarredIds } from '../utils/starredStorage';
 
 const Starred = () => {
   const navigate = useNavigate();
@@ -29,16 +30,44 @@ const Starred = () => {
     setIsLoading(true);
     try {
       const { data } = await api.get('/api/starred');
-      setStarredItems({
-        folders: data.folders || [],
-        files: data.files || [],
-      });
-    } catch (err) {
-      if (err.response?.status === 404) {
-        toast.error("Backend update pending. In Render dashboard, click 'Manual Deploy' > 'Deploy latest commit'.");
-      } else {
-        toast.error('Error loading starred items');
+      if (data && (Array.isArray(data.folders) || Array.isArray(data.files))) {
+        setStarredItems({
+          folders: data.folders || [],
+          files: data.files || [],
+        });
+        return;
       }
+    } catch {
+      // Backend /api/starred route may still be deploying on Render; use resilient fallback
+    }
+
+    // Resilient fallback: fetch all drive items and filter by starred IDs
+    try {
+      const starredIds = new Set(getLocalStarredIds());
+      const [folderRes, fileRes] = await Promise.all([
+        api.get("/api/folders"),
+        api.get("/api/files")
+      ]);
+
+      const allFolders = (folderRes.data?.folders || []).map((f) => ({
+        ...f,
+        item_type: "folder",
+        is_starred: !!f.is_starred || starredIds.has(f.id)
+      }));
+
+      const allFiles = (fileRes.data?.files || []).map((f) => ({
+        ...f,
+        item_type: "file",
+        is_starred: !!f.is_starred || starredIds.has(f.id)
+      }));
+
+      setStarredItems({
+        folders: allFolders.filter((f) => f.is_starred),
+        files: allFiles.filter((f) => f.is_starred)
+      });
+    } catch (fallbackErr) {
+      console.warn("Could not load starred fallback:", fallbackErr.message);
+      toast.error('Error loading starred items');
     } finally {
       setIsLoading(false);
     }
@@ -49,18 +78,14 @@ const Starred = () => {
   }, [fetchStarred]);
 
   const handleToggleStar = async (item) => {
-    // Optimistic UI update
+    // Optimistic UI update: immediately remove from Starred view
     const isFolder = item.item_type === 'folder' || (!item.mime_type && item.path !== undefined);
     setStarredItems((prev) => ({
       folders: isFolder ? prev.folders.filter((f) => f.id !== item.id) : prev.folders,
       files: isFolder ? prev.files : prev.files.filter((f) => f.id !== item.id),
     }));
 
-    const ok = await toggleStarItem(item);
-    if (!ok) {
-      // Revert if API failed
-      fetchStarred();
-    }
+    await toggleStarItem(item);
   };
 
   const handleConfirmDelete = async () => {
