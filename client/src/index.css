@@ -128,16 +128,19 @@
   height: 100%;
   overflow-y: auto;
   padding: 1rem;
+  background-color: #ffffff !important;
 }
 .pptx-preview-container > * {
   margin-left: auto !important;
   margin-right: auto !important;
   margin-bottom: 1.5rem !important;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
-  border-radius: 8px;
-  background-color: #ffffff;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  background-color: #ffffff !important;
 }
 .pptx-preview-container svg {
   max-width: 100%;
   height: auto;
+  background-color: #ffffff !important;
 }

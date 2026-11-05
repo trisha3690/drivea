@@ -415,15 +415,15 @@ const FilePreview = ({ file, onClose }) => {
                         )
                     ) : fileType === "pptx" ? (
                         /* Direct PowerPoint Presentation Inline Preview */
-                        <div className="w-full flex flex-col h-[75vh] bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-sm relative animate-fade-in">
+                        <div className="w-full flex flex-col h-[75vh] bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm relative animate-fade-in">
                             {isPptxRendering && (
-                                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-slate-300 bg-slate-900/85 backdrop-blur-xs">
+                                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-slate-600 bg-white/90 backdrop-blur-xs">
                                     <Loader2Icon className="size-8 animate-spin text-orange-600"/>
                                     <p className="text-sm font-medium">Loading presentation slides...</p>
                                 </div>
                             )}
                             {fallbackSlides.length > 0 ? (
-                                <div className="w-full h-full overflow-y-auto p-4 sm:p-8 space-y-6 bg-slate-100">
+                                <div className="w-full h-full overflow-y-auto p-4 sm:p-8 space-y-6 bg-slate-50">
                                     {fallbackSlides.map(slide => (
                                         <div key={slide.number} className="max-w-2xl mx-auto bg-white rounded-xl shadow-xs border border-slate-200 p-6 sm:p-8">
                                             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
@@ -441,7 +441,7 @@ const FilePreview = ({ file, onClose }) => {
                             ) : (
                                 <div 
                                   ref={pptxContainerRef} 
-                                  className="w-full h-full overflow-auto p-4 pptx-preview-container" 
+                                  className="w-full h-full overflow-auto p-4 pptx-preview-container bg-white" 
                                 />
                             )}
                         </div>
