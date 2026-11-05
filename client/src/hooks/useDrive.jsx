@@ -168,6 +168,19 @@ export function useDrive(){
        )
   }
 
+  const toggleStarItem = (item) => {
+     const isFolder = isFolderItem(item);
+     const endpoint = isFolder ? "folders" : "files";
+     const id = item.id || item;
+     const willBeStarred = !item.is_starred;
+     return runAction(
+        api.patch(`/api/${endpoint}/${id}/star`),
+        willBeStarred ? "Added to Starred" : "Removed from Starred",
+        "Error updating starred status",
+        () => fetchDriveContent()
+     );
+  };
+
   return {
     uploadFiles,
     createFolder,
@@ -176,6 +189,7 @@ export function useDrive(){
     deleteItem,
     restoreItem,
     permanentDeleteItem,
+    toggleStarItem,
     isUploading,
     uploadProgress
   }

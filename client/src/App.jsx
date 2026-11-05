@@ -6,6 +6,7 @@ import Drive from './pages/Drive'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import DashboardLayout from './components/layout/DashboardLayout'
 import SharedFile from './pages/SharedFile'
+import Starred from './pages/Starred'
 import Trash from './pages/Trash'
 import SharedWithMe from './pages/SharedWithMe'
 
@@ -24,6 +25,7 @@ const App = () => {
          <Route element={<DashboardLayout />}>
            <Route path="/" element={<Drive />} />
            <Route path="/drive/:folderId" element={<Drive />} />
+           <Route path="/starred" element={<Starred />} />
            <Route path="/shared" element={<SharedFile />} />
            <Route path="/trash" element={<Trash />} />
          </Route>

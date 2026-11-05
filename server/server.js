@@ -8,6 +8,7 @@ import folderRouter from "./routes/folderRoutes.js";
 import fileRouter from "./routes/fileRoutes.js";
 import trashRouter from "./routes/trashRoutes.js";
 import shareRouter from "./routes/shareRoutes.js";
+import starredRouter from "./routes/starredRoutes.js";
 
 const app = express()
 
@@ -60,6 +61,7 @@ app.use("/api/folders", folderRouter)
 app.use("/api/files", fileRouter)
 app.use("/api/trash", trashRouter)
 app.use("/api/shares", shareRouter)
+app.use("/api/starred", starredRouter)
 
 // Error Handling Middleware
 app.use((err, _req, res, _next)=> {
