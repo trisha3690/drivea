@@ -20,11 +20,7 @@ const Sidebar = ({onCreateFolderClick, isMobileOpen, setIsMobileOpen}) => {
 
     const handleFileSelect = (e) => {
         if (e.target.files && e.target.files.length > 0) {
-            const files = Array.from(e.target.files);
-            uploadFiles(files, currentFolderId);
-            setTimeout(() => {
-                if (e.target) e.target.value = "";
-            }, 500);
+            uploadFiles(e.target.files, currentFolderId);
             setIsMobileOpen?.(false);
         }
     };
@@ -68,7 +64,7 @@ const Sidebar = ({onCreateFolderClick, isMobileOpen, setIsMobileOpen}) => {
 
         {/* Upload CTA Dropdown */}
         <div className='p-4'>
-            <input type="file" ref={fileInputRef} multiple className='hidden' onChange={handleFileSelect}/>
+            <input type="file" ref={fileInputRef} multiple className='hidden' onClick={(e) => { e.target.value = null; }} onChange={handleFileSelect}/>
 
             <Dropdown
             trigger={
