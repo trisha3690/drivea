@@ -241,3 +241,31 @@ export const permanentDeleteFolder = async (req, res) => {
         return res.status(500).json({error: error.message});
     }
 }
+
+
+// Toggle star status of a folder
+// PATCH /api/folders/:id/star
+export const toggleStarFolder = async (req, res) => {
+    try {
+        const [folder] = await sql`
+        SELECT id, is_starred FROM folders 
+        WHERE id = ${req.params.id} AND owner_id = ${req.user.id} AND is_trashed = false
+        `;
+
+        if (!folder) {
+            return res.status(404).json({ error: "Folder not found." });
+        }
+
+        const newStarred = !folder.is_starred;
+        const [updated] = await sql`
+        UPDATE folders 
+        SET is_starred = ${newStarred}, updated_at = NOW() 
+        WHERE id = ${folder.id} 
+        RETURNING *
+        `;
+
+        return res.status(200).json({ folder: updated, is_starred: newStarred });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};

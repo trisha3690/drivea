@@ -1,12 +1,12 @@
-import { MoreVerticalIcon, EyeIcon, Share2Icon, Edit2Icon, FolderInputIcon, Trash2Icon } from "lucide-react";
+import { MoreVerticalIcon, EyeIcon, Share2Icon, Edit2Icon, FolderInputIcon, Trash2Icon, StarIcon } from "lucide-react";
 import { Dropdown, DropdownItem } from "./Dropdown";
 
-export function ItemDropdown({ item, onPreview, onShare, onRename, onMove, onDelete }) {
+export function ItemDropdown({ item, onPreview, onShare, onRename, onMove, onDelete, onToggleStar }) {
     return (
         <div onClick={(e) => e.stopPropagation()}>
             <Dropdown
                 align="right"
-                className="w-44 shadow-lg"
+                className="w-48 shadow-lg"
                 trigger={
                     <button
                         type="button"
@@ -20,6 +20,11 @@ export function ItemDropdown({ item, onPreview, onShare, onRename, onMove, onDel
                 {onPreview && (
                     <DropdownItem icon={EyeIcon} onClick={() => onPreview(item)}>
                         Preview
+                    </DropdownItem>
+                )}
+                {onToggleStar && (
+                    <DropdownItem icon={StarIcon} onClick={() => onToggleStar(item)}>
+                        {item.is_starred ? "Remove from Starred" : "Add to Starred"}
                     </DropdownItem>
                 )}
                 <DropdownItem icon={Share2Icon} onClick={() => onShare(item)}>

@@ -1,8 +1,8 @@
-import { LucideFolder } from 'lucide-react'
+import { LucideFolder, StarIcon } from 'lucide-react'
 import React from 'react'
 import { ItemDropdown } from '../ui/ItemDropdown'
 
-const FolderCard = ({folder, onClick, onShare, onRename, onMove, onDelete}) => {
+const FolderCard = ({folder, onClick, onShare, onRename, onMove, onDelete, onToggleStar}) => {
   return (
     <div className="group relative bg-white border border-slate-200 hover:border-orange-200 rounded-2xl
     p-3.5 sm:p-4 transition-all duration-200 flex items-center justify-between gap-2 shadow-xs">
@@ -17,7 +17,25 @@ const FolderCard = ({folder, onClick, onShare, onRename, onMove, onDelete}) => {
             group-hover:text-orange-600 transition-colors" title={folder.name}>{folder.name}</h4>
       </button>
 
-      <ItemDropdown item={folder} onShare={onShare} onRename={onRename} onMove={onMove} onDelete={onDelete}/>
+      <div className="flex items-center gap-0.5">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleStar?.(folder);
+          }}
+          className={`p-1.5 rounded-lg transition ${
+            folder.is_starred
+              ? "text-amber-500 hover:bg-amber-50"
+              : "text-slate-300 hover:text-amber-500 hover:bg-slate-100 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+          }`}
+          title={folder.is_starred ? "Remove from Starred" : "Add to Starred"}
+          aria-label={folder.is_starred ? "Remove from Starred" : "Add to Starred"}
+        >
+          <StarIcon className={`size-4 ${folder.is_starred ? "fill-amber-400 text-amber-500" : ""}`} />
+        </button>
+        <ItemDropdown item={folder} onShare={onShare} onRename={onRename} onMove={onMove} onDelete={onDelete} onToggleStar={onToggleStar}/>
+      </div>
     </div>
   )
 }

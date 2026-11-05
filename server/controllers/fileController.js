@@ -351,3 +351,31 @@ export const permanentDeleteFile = async (req, res) => {
         return res.status(500).json({ error: error.message });
     }
 }
+
+
+// Toggle star status of a file
+// PATCH /api/files/:id/star
+export const toggleStarFile = async (req, res) => {
+    try {
+        const [file] = await sql`
+        SELECT id, is_starred FROM files 
+        WHERE id = ${req.params.id} AND owner_id = ${req.user.id} AND is_trashed = false
+        `;
+
+        if (!file) {
+            return res.status(404).json({ error: "File not found." });
+        }
+
+        const newStarred = !file.is_starred;
+        const [updated] = await sql`
+        UPDATE files 
+        SET is_starred = ${newStarred}, updated_at = NOW() 
+        WHERE id = ${file.id} 
+        RETURNING *
+        `;
+
+        return res.status(200).json({ file: updated, is_starred: newStarred });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};

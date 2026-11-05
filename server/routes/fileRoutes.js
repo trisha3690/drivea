@@ -1,7 +1,7 @@
 import express from "express"
 import { protect } from "../middleware/auth.js";
 import { upload } from "../middleware/upload.js"
-import { downloadFile, getFilePreviewUrl, getFiles, moveFile, permanentDeleteFile, renameFile, restoreFile, softDeleteFile, uploadFiles, viewFile } from "../controllers/fileController.js";
+import { downloadFile, getFilePreviewUrl, getFiles, moveFile, permanentDeleteFile, renameFile, restoreFile, softDeleteFile, toggleStarFile, uploadFiles, viewFile } from "../controllers/fileController.js";
 
 const fileRouter = express.Router();
 
@@ -26,6 +26,7 @@ fileRouter.get("/:id/download", downloadFile)
 fileRouter.get("/:id/view", viewFile)
 fileRouter.patch("/:id/rename", renameFile)
 fileRouter.patch("/:id/move", moveFile)
+fileRouter.patch("/:id/star", toggleStarFile)
 fileRouter.delete("/:id", softDeleteFile)
 fileRouter.post("/:id/restore", restoreFile)
 fileRouter.delete("/:id/permanent", permanentDeleteFile)

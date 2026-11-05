@@ -2,8 +2,9 @@ import React from 'react'
 import { formatBytes, getFileIcon } from '../../assets/assets'
 import { ItemDropdown } from '../ui/ItemDropdown'
 import { format } from 'date-fns'
+import { StarIcon } from 'lucide-react'
 
-const FileCard = ({ file, onPreview, onShare, onRename, onMove, onDelete}) => {
+const FileCard = ({ file, onPreview, onShare, onRename, onMove, onDelete, onToggleStar }) => {
   return (
     <div 
       onClick={() => onPreview?.(file)}
@@ -15,8 +16,26 @@ const FileCard = ({ file, onPreview, onShare, onRename, onMove, onDelete}) => {
             <div className='p-2 sm:p-2.5 rounded-xl bg-slate-50 border border-slate-100 shrink-0'>
                 {getFileIcon(file.mime_type, "size-5 sm:size-6")}
             </div>
-            <ItemDropdown item={file} onPreview={onPreview} onShare={onShare}
-            onRename={onRename} onMove={onMove} onDelete={onDelete}/>
+            <div className="flex items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleStar?.(file);
+                  }}
+                  className={`p-1.5 rounded-lg transition ${
+                    file.is_starred
+                      ? "text-amber-500 hover:bg-amber-50"
+                      : "text-slate-300 hover:text-amber-500 hover:bg-slate-100 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                  }`}
+                  title={file.is_starred ? "Remove from Starred" : "Add to Starred"}
+                  aria-label={file.is_starred ? "Remove from Starred" : "Add to Starred"}
+                >
+                  <StarIcon className={`size-4 ${file.is_starred ? "fill-amber-400 text-amber-500" : ""}`} />
+                </button>
+                <ItemDropdown item={file} onPreview={onPreview} onShare={onShare}
+                onRename={onRename} onMove={onMove} onDelete={onDelete} onToggleStar={onToggleStar}/>
+            </div>
         </div>
 
         <div>
