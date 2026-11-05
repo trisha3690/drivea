@@ -46,3 +46,4 @@ if (typeof Object.groupBy !== 'function') {
     return result;
   };
 }
+
