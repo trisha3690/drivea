@@ -11,20 +11,38 @@ export function Dropdown({ trigger, children, align = "right", position = "botto
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+        document.addEventListener("touchstart", handleClickOutside, { passive: true });
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+        };
     }, []);
 
     const alignStyle = align === "right" ? "right-0" : "left-0";
     const posStyle = position === "top" ? "bottom-full mb-2" : "top-full mt-2";
 
     return (
-        <div className="relative inline-block text-left" ref={dropdownRef}>
-            <div onClick={() => setIsOpen(!isOpen)}>{trigger}</div>
+        <div 
+            className="relative inline-block text-left" 
+            ref={dropdownRef} 
+            onClick={(e) => e.stopPropagation()}
+        >
+            <div 
+                onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setIsOpen((prev) => !prev); 
+                }}
+            >
+                {trigger}
+            </div>
 
             {isOpen && (
                 <div
-                    className={`absolute ${alignStyle} ${posStyle} w-56 rounded-xl bg-white border border-slate-200 py-1.5 z-50 animate-fade-in ${className}`}
-                    onClick={() => setIsOpen(false)}
+                    className={`absolute ${alignStyle} ${posStyle} w-56 rounded-xl bg-white border border-slate-200 py-1.5 z-50 animate-fade-in shadow-xl ${className}`}
+                    onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setIsOpen(false); 
+                    }}
                 >
                     {children}
                 </div>
@@ -38,10 +56,13 @@ export function DropdownItem({ children, icon: Icon, onClick, danger = false, di
         <button
             type="button"
             disabled={disabled}
-            onClick={onClick}
+            onClick={(e) => {
+                e.stopPropagation();
+                onClick?.(e);
+            }}
             className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2.5 transition ${
                 danger ? "text-red-600 hover:bg-red-50 hover:text-red-700" : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
+            } disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer`}
         >
             {Icon && <Icon className="size-4 shrink-0" />}
             <span>{children}</span>
