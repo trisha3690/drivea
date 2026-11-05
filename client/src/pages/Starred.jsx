@@ -10,7 +10,7 @@ import RenameModal from '../components/files/RenameModal';
 import MoveModal from '../components/files/MoveModal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import toast from 'react-hot-toast';
-import { getLocalStarredIds } from '../utils/starredStorage';
+import { getLocalStarredIds, getLocalUnstarredIds } from '../utils/starredStorage';
 
 const Starred = () => {
   const navigate = useNavigate();
@@ -29,37 +29,47 @@ const Starred = () => {
   const fetchStarred = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { data } = await api.get('/api/starred');
-      if (data && (Array.isArray(data.folders) || Array.isArray(data.files))) {
-        setStarredItems({
-          folders: data.folders || [],
-          files: data.files || [],
-        });
-        return;
-      }
-    } catch {
-      // Backend /api/starred route may still be deploying on Render; use resilient fallback
-    }
-
-    // Resilient fallback: fetch all drive items and filter by starred IDs
-    try {
       const starredIds = new Set(getLocalStarredIds());
+      const unstarredIds = new Set(getLocalUnstarredIds());
+
+      try {
+        const { data } = await api.get('/api/starred');
+        if (data && (Array.isArray(data.folders) || Array.isArray(data.files))) {
+          const rawFolders = (data.folders || []).map((f) => ({ ...f, item_type: "folder", is_starred: true }));
+          const rawFiles = (data.files || []).map((f) => ({ ...f, item_type: "file", is_starred: true }));
+
+          const finalFolders = rawFolders.filter((f) => !unstarredIds.has(f.id));
+          const finalFiles = rawFiles.filter((f) => !unstarredIds.has(f.id));
+
+          setStarredItems({
+            folders: finalFolders,
+            files: finalFiles,
+          });
+          return;
+        }
+      } catch {
+        // Backend /api/starred route may still be deploying; use resilient fallback
+      }
+
+      // Resilient fallback: fetch all drive items and filter by starred IDs
       const [folderRes, fileRes] = await Promise.all([
         api.get("/api/folders"),
         api.get("/api/files")
       ]);
 
-      const allFolders = (folderRes.data?.folders || []).map((f) => ({
-        ...f,
-        item_type: "folder",
-        is_starred: !!f.is_starred || starredIds.has(f.id)
-      }));
+      const allFolders = (folderRes.data?.folders || []).map((f) => {
+        let isStarred = !!f.is_starred;
+        if (unstarredIds.has(f.id)) isStarred = false;
+        else if (starredIds.has(f.id)) isStarred = true;
+        return { ...f, item_type: "folder", is_starred: isStarred };
+      });
 
-      const allFiles = (fileRes.data?.files || []).map((f) => ({
-        ...f,
-        item_type: "file",
-        is_starred: !!f.is_starred || starredIds.has(f.id)
-      }));
+      const allFiles = (fileRes.data?.files || []).map((f) => {
+        let isStarred = !!f.is_starred;
+        if (unstarredIds.has(f.id)) isStarred = false;
+        else if (starredIds.has(f.id)) isStarred = true;
+        return { ...f, item_type: "file", is_starred: isStarred };
+      });
 
       setStarredItems({
         folders: allFolders.filter((f) => f.is_starred),
