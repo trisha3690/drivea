@@ -68,17 +68,23 @@ export async function initDB() {
             sql`CREATE INDEX IF NOT EXISTS idx_files_owner_trashed_date   ON files (owner_id, is_trashed, created_at DESC)`,
             sql`CREATE INDEX IF NOT EXISTS idx_files_owner_trashed_name   ON files (owner_id, is_trashed, name)`,
             sql`CREATE INDEX IF NOT EXISTS idx_shares_owner    ON share_links (owner_id, created_at DESC)`,
-            sql`CREATE INDEX IF NOT EXISTS idx_shares_resource ON share_links (resource_id)`,
-            sql`ALTER TABLE files ADD COLUMN IF NOT EXISTS is_starred BOOLEAN NOT NULL DEFAULT FALSE`,
-            sql`ALTER TABLE folders ADD COLUMN IF NOT EXISTS is_starred BOOLEAN NOT NULL DEFAULT FALSE`,
-            sql`CREATE INDEX IF NOT EXISTS idx_files_owner_starred ON files (owner_id, is_starred, is_trashed)`,
-            sql`CREATE INDEX IF NOT EXISTS idx_folders_owner_starred ON folders (owner_id, is_starred, is_trashed)`,
+            sql`CREATE INDEX IF NOT EXISTS idx_shares_resource ON share_links (resource_id)`
         ]
-        )
+        );
 
-        console.log("Database initialize successfully")
+        console.log("Core database tables initialized successfully");
     } catch (error) {
-        console.error("Error initializing database:", error);
-        throw error;
+        console.error("Error creating core database tables:", error);
+    }
+
+    // Apply migrations separately to guarantee zero-downtime startup
+    try {
+        await sql`ALTER TABLE files ADD COLUMN IF NOT EXISTS is_starred BOOLEAN NOT NULL DEFAULT FALSE`;
+        await sql`ALTER TABLE folders ADD COLUMN IF NOT EXISTS is_starred BOOLEAN NOT NULL DEFAULT FALSE`;
+        await sql`CREATE INDEX IF NOT EXISTS idx_files_owner_starred ON files (owner_id, is_starred, is_trashed)`;
+        await sql`CREATE INDEX IF NOT EXISTS idx_folders_owner_starred ON folders (owner_id, is_starred, is_trashed)`;
+        console.log("Starred feature columns and indexes verified successfully");
+    } catch (migrationError) {
+        console.warn("Migration notice (starred columns):", migrationError.message);
     }
 }

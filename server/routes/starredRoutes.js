@@ -9,3 +9,4 @@ starredRouter.use(protect);
 starredRouter.get("/", getStarredItems);
 
 export default starredRouter;
+

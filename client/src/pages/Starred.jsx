@@ -1,29 +1,29 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import { StarIcon } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import api from '../config/api'
-import { useDrive } from '../hooks/useDrive'
-import FileGrid from '../components/files/FileGrid'
-import FilePreview from '../components/files/FilePreview'
-import ShareModal from '../components/files/ShareModal'
-import RenameModal from '../components/files/RenameModal'
-import MoveModal from '../components/files/MoveModal'
-import { ConfirmDialog } from '../components/ui/ConfirmDialog'
-import toast from 'react-hot-toast'
+import React, { useEffect, useState, useCallback } from 'react';
+import { StarIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import api from '../config/api';
+import { useDrive } from '../hooks/useDrive';
+import FileGrid from '../components/files/FileGrid';
+import FilePreview from '../components/files/FilePreview';
+import ShareModal from '../components/files/ShareModal';
+import RenameModal from '../components/files/RenameModal';
+import MoveModal from '../components/files/MoveModal';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import toast from 'react-hot-toast';
 
 const Starred = () => {
-  const navigate = useNavigate()
-  const [{ folders, files }, setStarredItems] = useState({ folders: [], files: [] })
-  const [isLoading, setIsLoading] = useState(true)
+  const navigate = useNavigate();
+  const [{ folders, files }, setStarredItems] = useState({ folders: [], files: [] });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { deleteItem: removeDriveItem, toggleStarItem } = useDrive()
+  const { deleteItem: removeDriveItem, toggleStarItem } = useDrive();
 
   // Active item modals
-  const [previewFile, setPreviewFile] = useState(null)
-  const [shareItem, setShareItem] = useState(null)
-  const [renameItem, setRenameItem] = useState(null)
-  const [moveItem, setMoveItem] = useState(null)
-  const [deleteItem, setDeleteItem] = useState(null)
+  const [previewFile, setPreviewFile] = useState(null);
+  const [shareItem, setShareItem] = useState(null);
+  const [renameItem, setRenameItem] = useState(null);
+  const [moveItem, setMoveItem] = useState(null);
+  const [deleteItem, setDeleteItem] = useState(null);
 
   const fetchStarred = useCallback(async () => {
     setIsLoading(true);
@@ -33,8 +33,12 @@ const Starred = () => {
         folders: data.folders || [],
         files: data.files || [],
       });
-    } catch {
-      toast.error('Error loading starred items');
+    } catch (err) {
+      if (err.response?.status === 404) {
+        toast.error("Backend update pending. In Render dashboard, click 'Manual Deploy' > 'Deploy latest commit'.");
+      } else {
+        toast.error('Error loading starred items');
+      }
     } finally {
       setIsLoading(false);
     }
