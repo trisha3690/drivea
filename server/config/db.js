@@ -1,4 +1,57 @@
-import { neon } from '@neondatabase/serverless';
+import { neon, neonConfig } from '@neondatabase/serverless';
+import dns from 'dns';
+import https from 'https';
+
+// Resilient fetch wrapper with public DNS fallback (guarantees connectivity across all ISP/local networks)
+const defaultFetch = globalThis.fetch;
+neonConfig.fetchFunction = async (url, options = {}) => {
+    try {
+        return await defaultFetch(url, options);
+    } catch (fetchErr) {
+        try {
+            const parsedUrl = new URL(url);
+            const resolver = new dns.promises.Resolver();
+            resolver.setServers(['8.8.8.8', '1.1.1.1']);
+            const addrs = await resolver.resolve4(parsedUrl.hostname);
+            const ip = addrs[0];
+
+            return await new Promise((resolve, reject) => {
+                const req = https.request({
+                    hostname: ip,
+                    port: parsedUrl.port || 443,
+                    path: parsedUrl.pathname + parsedUrl.search,
+                    method: options.method || 'GET',
+                    headers: {
+                        ...options.headers,
+                        Host: parsedUrl.hostname,
+                    },
+                    servername: parsedUrl.hostname,
+                    rejectUnauthorized: true,
+                }, (res) => {
+                    let data = '';
+                    res.on('data', (chunk) => data += chunk);
+                    res.on('end', () => {
+                        resolve({
+                            ok: res.statusCode >= 200 && res.statusCode < 300,
+                            status: res.statusCode,
+                            statusText: res.statusMessage,
+                            headers: new Headers(res.headers),
+                            json: async () => JSON.parse(data),
+                            text: async () => data,
+                        });
+                    });
+                });
+
+                req.on('error', reject);
+                if (options.body) req.write(options.body);
+                req.end();
+            });
+        } catch {
+            throw fetchErr;
+        }
+    }
+};
+
 export const sql = neon(process.env.DATABASE_URL);
 
 export async function initDB() {
