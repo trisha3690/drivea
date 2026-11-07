@@ -31,5 +31,10 @@
     "@vitejs/plugin-react": "^6.1.1",
     "oxlint": "^1.81.0",
     "vite": "^8.3.0"
+  },
+  "overrides": {
+    "@aiden0z/pptx-renderer": {
+      "pdfjs-dist": "$pdfjs-dist"
+    }
   }
 }
