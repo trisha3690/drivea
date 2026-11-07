@@ -4,7 +4,10 @@ export const API_BASE_URL = (
     import.meta.env.VITE_BASE_URL && import.meta.env.VITE_BASE_URL !== "/"
         ? import.meta.env.VITE_BASE_URL
         : "https://drivea-bjn0.onrender.com"
-).replace(/\/+$/, "");
+)
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\.+$/, "");
 
 const api = axios.create({
     baseURL: API_BASE_URL,
