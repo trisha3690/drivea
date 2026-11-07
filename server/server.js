@@ -19,7 +19,7 @@ const clientDistPath = path.join(__dirname, "../client/dist");
 const app = express();
 
 // CORS configuration
-const rawOrigins = process.env.ORIGINS || "http://localhost:5173,http://localhost:5174,http://localhost:3000,https://drivea-frontend.onrender.com";
+const rawOrigins = process.env.ORIGINS || "http://localhost:5173,http://localhost:5174,http://localhost:3000,https://drivea-frontend.onrender.com,https://drivea-r3tk.vercel.app,https://drivea-bjn0.onrender.com";
 const allowedOrigins = rawOrigins
   .split(",")
   .map((origin) => origin.trim().replace(/^["']|["']$/g, ""))
